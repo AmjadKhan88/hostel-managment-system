@@ -1,16 +1,9 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import { ApiResponse } from '../../utils/ApiResponse.js';
+import authRoutes from './auth.routes.js';
 
 const router = Router();
-
-/**
- * Module routers are mounted here as each day's scope is implemented, e.g.:
- *   router.use('/auth', authRoutes);
- *   router.use('/residents', residentRoutes);
- *   router.use('/rooms', roomRoutes);
- * Day 1 only wires up infrastructure, so only /health exists so far.
- */
 
 router.get('/health', (req, res) => {
   const dbStates = ['disconnected', 'connected', 'connecting', 'disconnecting'];
@@ -22,5 +15,10 @@ router.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
   }, 'Service is healthy').send(res);
 });
+
+router.use('/auth', authRoutes);
+
+// Further module routers (residents, rooms, payments, ...) are mounted here
+// as each is implemented on its own scoped day.
 
 export default router;

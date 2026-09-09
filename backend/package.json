@@ -15,7 +15,8 @@
     "format": "prettier --write \"src/**/*.js\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "worker": "nodemon src/jobs/worker.js"
+    "worker": "nodemon src/jobs/worker.js",
+    "seed:admin": "node src/scripts/seedSuperAdmin.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
