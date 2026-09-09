@@ -1,4 +1,6 @@
 import { useHealthCheck } from '@/hooks/useHealthCheck';
+import { useAuthStore } from '@/store/authStore';
+import { useLogout } from '@/features/auth/hooks/useLogout';
 
 const tokenSwatches = [
   { name: 'brand.500', className: 'bg-brand-500' },
@@ -9,17 +11,35 @@ const tokenSwatches = [
 
 export default function SetupStatusPage() {
   const { data, isLoading, isError, error } = useHealthCheck();
+  const user = useAuthStore((s) => s.user);
+  const { mutate: logout, isPending: isLoggingOut } = useLogout();
 
   return (
     <div className="min-h-screen bg-canvas px-6 py-10">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-8">
-          <p className="text-sm font-medium text-brand-600">Hostel Management System</p>
-          <h1 className="mt-1 text-2xl font-semibold text-ink">Day 1 — Project Setup</h1>
-          <p className="mt-2 text-sm text-ink-muted">
-            This page exists to verify the toolchain, not as the product UI. The real dashboard
-            layout is built on its scoped day, using this same token system.
-          </p>
+        <header className="mb-8 flex items-start justify-between">
+          <div>
+            <p className="text-sm font-medium text-brand-600">Hostel Management System</p>
+            <h1 className="mt-1 text-2xl font-semibold text-ink">Day 3 — Authentication</h1>
+            <p className="mt-2 text-sm text-ink-muted">
+              This page is still a toolchain checkpoint, not the product UI — the real dashboard
+              layout is built on its scoped day.
+            </p>
+          </div>
+          {user && (
+            <div className="flex items-center gap-3 rounded-control border border-border bg-surface px-3 py-2 text-sm">
+              <span className="text-ink-muted">
+                Signed in as <span className="font-medium text-ink">{user.email}</span>
+              </span>
+              <button
+                onClick={() => logout()}
+                disabled={isLoggingOut}
+                className="font-medium text-brand-600 hover:text-brand-700 disabled:opacity-60"
+              >
+                {isLoggingOut ? 'Signing out…' : 'Logout'}
+              </button>
+            </div>
+          )}
         </header>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -30,6 +50,7 @@ export default function SetupStatusPage() {
               <li>✅ Tailwind design tokens loaded</li>
               <li>✅ React Router mounted</li>
               <li>✅ TanStack Query provider mounted</li>
+              <li>✅ Auth store + protected routing active</li>
             </ul>
           </section>
 
@@ -50,8 +71,29 @@ export default function SetupStatusPage() {
           </section>
         </div>
 
+        {user && (
+          <section className="surface-card mt-4 p-6">
+            <h2 className="text-sm font-semibold text-ink">Signed-in user &amp; permissions</h2>
+            <p className="mt-2 text-sm text-ink-muted">
+              {user.name} — role: <span className="font-medium text-ink">{user.role.name}</span>
+            </p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {user.role.permissions.map((p) => (
+                <span
+                  key={p}
+                  className="rounded-pill bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700"
+                >
+                  {p}
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section className="surface-card mt-4 p-6">
-          <h2 className="text-sm font-semibold text-ink">Design tokens (from reference dashboard)</h2>
+          <h2 className="text-sm font-semibold text-ink">
+            Design tokens (from reference dashboard)
+          </h2>
           <div className="mt-3 flex items-center gap-4">
             {tokenSwatches.map((t) => (
               <div key={t.name} className="flex flex-col items-center gap-1.5">
