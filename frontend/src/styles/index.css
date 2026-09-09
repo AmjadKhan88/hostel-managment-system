@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+  }
+
+  ::selection {
+    @apply bg-brand-200;
+  }
+
+  /* Visible keyboard focus everywhere — accessibility floor from the master spec */
+  :focus-visible {
+    outline: 2px solid theme('colors.brand.500');
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Base card shell reused by StatCard, panels, etc. Built out fully once
+     the dashboard UI day begins — this establishes the token, not the component. */
+  .surface-card {
+    @apply bg-surface rounded-card border border-border shadow-card;
+  }
+}
