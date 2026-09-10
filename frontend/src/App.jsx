@@ -2,12 +2,12 @@ import { Routes, Route } from 'react-router-dom';
 import { useSessionHydration } from '@/features/auth/hooks/useSessionHydration';
 import LoginPage from '@/routes/LoginPage.jsx';
 import ProtectedRoute from '@/components/common/ProtectedRoute.jsx';
-import SetupStatusPage from '@/routes/SetupStatusPage.jsx';
+import AppShell from '@/components/layout/AppShell.jsx';
+import DashboardPage from '@/routes/DashboardPage.jsx';
 
 /**
  * Route tree grows here as each module is implemented on its own DAY.
- * The real dashboard layout (sidebar/topbar) replaces SetupStatusPage
- * once the Hostel Management / Dashboard day is scoped.
+ * New authenticated pages nest under the AppShell route below.
  */
 export default function App() {
   useSessionHydration();
@@ -16,7 +16,9 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<SetupStatusPage />} />
+        <Route element={<AppShell />}>
+          <Route path="/" element={<DashboardPage />} />
+        </Route>
       </Route>
     </Routes>
   );
