@@ -26,7 +26,7 @@ export const navSections = [
     title: 'Operations',
     items: [
       { label: 'Residents', icon: Users, permission: 'student.read' },
-      { label: 'Rooms & Beds', icon: BedDouble, permission: 'room.read' },
+      { label: 'Rooms & Beds', icon: BedDouble, path: '/rooms', permission: 'room.read' },
       { label: 'Admissions', icon: ClipboardList },
       { label: 'Complaints', icon: MessageSquareWarning, permission: 'complaints.read' },
       { label: 'Maintenance', icon: Wrench, permission: 'maintenance.read' },

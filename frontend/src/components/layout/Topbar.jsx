@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Menu, Search, Bell, ChevronDown, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useLogout } from '@/features/auth/hooks/useLogout';
+import HostelSwitcher from './HostelSwitcher.jsx';
 
 export default function Topbar({ onOpenMobileSidebar }) {
   const user = useAuthStore((s) => s.user);
@@ -34,6 +35,8 @@ export default function Topbar({ onOpenMobileSidebar }) {
         >
           <Menu size={20} />
         </button>
+
+        <HostelSwitcher />
 
         <div className="relative hidden max-w-sm flex-1 sm:block">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
