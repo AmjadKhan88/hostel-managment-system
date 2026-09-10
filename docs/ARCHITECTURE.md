@@ -71,6 +71,17 @@ Monetary values will be stored as **integer minor units (e.g. paise/cents)**,
 never as floating-point major units, once the Fees & Accounting module is
 built. This is documented here now so every later day is consistent.
 
+## Note on transactions (local dev)
+
+The Room Allocation service (`allocation.service.js`) was written to use
+MongoDB transactions, which require a replica set. To keep local
+development simple, this project runs against a standalone `mongod`
+instead, so allocation writes are applied sequentially with best-effort
+compensating rollback on failure rather than true atomicity. This is a
+reduced guarantee versus the master spec's original requirement — revisit
+with `mongoose` sessions if this is ever deployed against a replica set
+(e.g. MongoDB Atlas, which is a replica set by default) in production.
+
 ## Multi-hostel readiness
 
 Business entities are designed to be scoped by `hostelId` from the start
