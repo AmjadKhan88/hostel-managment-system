@@ -9,6 +9,9 @@ export const PERMISSIONS = Object.freeze({
   ROOM_UPDATE: 'room.update',
   ROOM_ALLOCATE: 'room.allocate',
 
+  HOSTEL_MANAGE: 'hostel.manage',
+  BUILDING_MANAGE: 'building.manage',
+
   PAYMENTS_READ: 'payments.read',
   PAYMENTS_CREATE: 'payments.create',
   PAYMENTS_REFUND: 'payments.refund',

@@ -2,6 +2,9 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 import authRoutes from './auth.routes.js';
+import hostelRoutes from './hostel.routes.js';
+import buildingRoutes from './building.routes.js';
+import roomRoutes from './room.routes.js';
 
 const router = Router();
 
@@ -17,8 +20,11 @@ router.get('/health', (req, res) => {
 });
 
 router.use('/auth', authRoutes);
+router.use('/hostels', hostelRoutes);
+router.use('/buildings', buildingRoutes);
+router.use('/rooms', roomRoutes);
 
-// Further module routers (residents, rooms, payments, ...) are mounted here
-// as each is implemented on its own scoped day.
+// Further module routers (residents, payments, complaints, ...) are mounted
+// here as each is implemented on its own scoped day.
 
 export default router;
