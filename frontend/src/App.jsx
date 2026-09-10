@@ -8,6 +8,7 @@ import RoomsPage from '@/routes/RoomsPage.jsx';
 import RoomDetailPage from '@/routes/RoomDetailPage.jsx';
 import ResidentsPage from '@/routes/ResidentsPage.jsx';
 import ResidentDetailPage from '@/routes/ResidentDetailPage.jsx';
+import StaffPage from '@/routes/StaffPage.jsx';
 
 export default function App() {
   useSessionHydration();
@@ -22,6 +23,7 @@ export default function App() {
           <Route path="/rooms/:roomId" element={<RoomDetailPage />} />
           <Route path="/residents" element={<ResidentsPage />} />
           <Route path="/residents/:residentId" element={<ResidentDetailPage />} />
+          <Route path="/staff" element={<StaffPage />} />
         </Route>
       </Route>
     </Routes>
