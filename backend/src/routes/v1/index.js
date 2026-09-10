@@ -7,6 +7,8 @@ import buildingRoutes from './building.routes.js';
 import roomRoutes from './room.routes.js';
 import residentRoutes from './resident.routes.js';
 import allocationRoutes from './allocation.routes.js';
+import roleRoutes from './role.routes.js';
+import staffRoutes from './staff.routes.js';
 
 const router = Router();
 
@@ -27,6 +29,8 @@ router.use('/buildings', buildingRoutes);
 router.use('/rooms', roomRoutes);
 router.use('/residents', residentRoutes);
 router.use('/allocations', allocationRoutes);
+router.use('/roles', roleRoutes);
+router.use('/staff', staffRoutes);
 
 // Further module routers (admissions, payments, complaints, ...) are
 // mounted here as each is implemented on its own scoped day.
