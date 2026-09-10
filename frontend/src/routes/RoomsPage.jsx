@@ -67,7 +67,15 @@ export default function RoomsPage() {
     {
       key: 'building',
       header: 'Building',
-      render: (row) => buildings.find((b) => b._id === row.buildingId)?.name ?? '—',
+      render: (row) => (
+        <button
+          onClick={() => navigate(`/rooms/${row._id}`)}
+          className="font-medium text-brand-600 hover:text-brand-700"
+        >
+          {buildings.find((b) => b._id === row.buildingId)?.name ?? '—'}
+        </button>
+      ),
+      // render: (row) => buildings.find((b) => b._id === row.buildingId)?.name ?? '—',
     },
     { key: 'category', header: 'Category', render: (row) => row.category },
     { key: 'capacity', header: 'Capacity' },
