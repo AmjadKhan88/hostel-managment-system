@@ -47,7 +47,7 @@ export default function RoomDetailPage() {
         action={<StatusBadge status={room.status} />}
       />
 
-      <BedList roomId={room._id} capacity={room.capacity} />
+      <BedList roomId={room._id} capacity={room.capacity} hostelId={effectiveHostelId} />
     </div>
   );
 }

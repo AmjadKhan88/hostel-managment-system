@@ -1,17 +1,19 @@
 import { useState } from 'react';
-import { Plus, Wrench, CheckCircle2 } from 'lucide-react';
+import { Plus, Wrench, CheckCircle2, UserPlus } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.jsx';
+import AllocateResidentModal from '@/features/allocations/components/AllocateResidentModal.jsx';
 import { useBeds, useCreateBed, useUpdateBedStatus } from '../hooks/useBeds';
 
-export default function BedList({ roomId, capacity }) {
+export default function BedList({ roomId, capacity, hostelId }) {
   const { data, isLoading, isError, error } = useBeds(roomId);
   const createBed = useCreateBed(roomId);
   const updateStatus = useUpdateBedStatus(roomId);
 
   const [newBedNumber, setNewBedNumber] = useState('');
   const [pendingAction, setPendingAction] = useState(null); // { bedId, nextStatus, label }
+  const [assigningBed, setAssigningBed] = useState(null); // { _id, bedNumber }
 
   const beds = data?.data?.beds ?? [];
   const atCapacity = beds.length >= capacity;
@@ -37,9 +39,7 @@ export default function BedList({ roomId, capacity }) {
       </div>
 
       {isLoading && <p className="text-sm text-ink-muted">Loading beds…</p>}
-      {isError && (
-        <p className="text-sm text-danger">{error?.message ?? 'Failed to load beds'}</p>
-      )}
+      {isError && <p className="text-sm text-danger">{error?.message ?? 'Failed to load beds'}</p>}
 
       {!isLoading && !isError && beds.length === 0 && (
         <EmptyState title="No beds yet" description="Add the room's first bed below." />
@@ -57,31 +57,38 @@ export default function BedList({ roomId, capacity }) {
                 <StatusBadge status={bed.status} />
               </div>
 
-              {bed.status === 'occupied' ? (
-                <span className="text-xs text-ink-subtle">Managed via allocation</span>
-              ) : (
+              {bed.status === 'occupied' && (
+                <span className="text-xs text-ink-subtle">Managed via resident&apos;s allocation panel</span>
+              )}
+
+              {bed.status === 'available' && (
                 <div className="flex gap-1">
-                  {bed.status !== 'available' && (
-                    <button
-                      onClick={() =>
-                        setPendingAction({ bedId: bed._id, nextStatus: 'available', label: 'mark as Available' })
-                      }
-                      className="flex items-center gap-1 rounded-control px-2 py-1 text-xs font-medium text-success hover:bg-success-bg"
-                    >
-                      <CheckCircle2 size={13} /> Mark available
-                    </button>
-                  )}
-                  {bed.status !== 'maintenance' && (
-                    <button
-                      onClick={() =>
-                        setPendingAction({ bedId: bed._id, nextStatus: 'maintenance', label: 'mark as Maintenance' })
-                      }
-                      className="flex items-center gap-1 rounded-control px-2 py-1 text-xs font-medium text-warning hover:bg-warning-bg"
-                    >
-                      <Wrench size={13} /> Maintenance
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setAssigningBed(bed)}
+                    className="flex items-center gap-1 rounded-control px-2 py-1 text-xs font-medium text-brand-600 hover:bg-brand-50"
+                  >
+                    <UserPlus size={13} /> Assign resident
+                  </button>
+                  <button
+                    onClick={() =>
+                      setPendingAction({ bedId: bed._id, nextStatus: 'maintenance', label: 'mark as Maintenance' })
+                    }
+                    className="flex items-center gap-1 rounded-control px-2 py-1 text-xs font-medium text-warning hover:bg-warning-bg"
+                  >
+                    <Wrench size={13} /> Maintenance
+                  </button>
                 </div>
+              )}
+
+              {bed.status === 'maintenance' && (
+                <button
+                  onClick={() =>
+                    setPendingAction({ bedId: bed._id, nextStatus: 'available', label: 'mark as Available' })
+                  }
+                  className="flex items-center gap-1 rounded-control px-2 py-1 text-xs font-medium text-success hover:bg-success-bg"
+                >
+                  <CheckCircle2 size={13} /> Mark available
+                </button>
               )}
             </li>
           ))}
@@ -104,9 +111,7 @@ export default function BedList({ roomId, capacity }) {
           <Plus size={15} /> Add bed
         </button>
       </form>
-      {createBed.isError && (
-        <p className="mt-2 text-sm text-danger">{createBed.error.message}</p>
-      )}
+      {createBed.isError && <p className="mt-2 text-sm text-danger">{createBed.error.message}</p>}
 
       <ConfirmDialog
         open={Boolean(pendingAction)}
@@ -116,6 +121,14 @@ export default function BedList({ roomId, capacity }) {
         description={pendingAction ? `Are you sure you want to ${pendingAction.label}?` : ''}
         confirmLabel="Confirm"
         isLoading={updateStatus.isPending}
+      />
+
+      <AllocateResidentModal
+        open={Boolean(assigningBed)}
+        onClose={() => setAssigningBed(null)}
+        hostelId={hostelId}
+        bedId={assigningBed?._id}
+        bedNumber={assigningBed?.bedNumber}
       />
     </div>
   );

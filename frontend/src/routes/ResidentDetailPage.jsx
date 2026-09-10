@@ -5,14 +5,19 @@ import PageHeader from '@/components/ui/PageHeader.jsx';
 import StatusBadge from '@/components/ui/StatusBadge.jsx';
 import { useResident } from '@/features/residents/hooks/useResident';
 import ResidentFormModal from '@/features/residents/components/ResidentFormModal.jsx';
+import { useAllocationHistory } from '@/features/allocations/hooks/useAllocationHistory';
+import CurrentAllocationCard from '@/features/allocations/components/CurrentAllocationCard.jsx';
+import AllocationHistory from '@/features/allocations/components/AllocationHistory.jsx';
 
 export default function ResidentDetailPage() {
   const { residentId } = useParams();
   const navigate = useNavigate();
   const { data, isLoading, isError, error } = useResident(residentId);
+  const { data: historyData } = useAllocationHistory(residentId);
   const [editOpen, setEditOpen] = useState(false);
 
   const resident = data?.data?.resident;
+  const activeAllocation = (historyData?.data?.allocations ?? []).find((a) => a.status === 'active') ?? null;
 
   if (isLoading) return <p className="text-sm text-ink-muted">Loading resident…</p>;
   if (isError) {
@@ -68,6 +73,12 @@ export default function ResidentDetailPage() {
           </dl>
         </section>
       </div>
+
+      <div className="mt-4">
+        <CurrentAllocationCard resident={resident} hostelId={resident.hostelId} activeAllocation={activeAllocation} />
+      </div>
+
+      <AllocationHistory residentId={resident._id} />
 
       <ResidentFormModal
         open={editOpen}
