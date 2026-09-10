@@ -9,6 +9,7 @@ import residentRoutes from './resident.routes.js';
 import allocationRoutes from './allocation.routes.js';
 import roleRoutes from './role.routes.js';
 import staffRoutes from './staff.routes.js';
+import metaRoutes from './meta.routes.js';
 
 const router = Router();
 
@@ -31,6 +32,7 @@ router.use('/residents', residentRoutes);
 router.use('/allocations', allocationRoutes);
 router.use('/roles', roleRoutes);
 router.use('/staff', staffRoutes);
+router.use('/meta', metaRoutes);
 
 // Further module routers (admissions, payments, complaints, ...) are
 // mounted here as each is implemented on its own scoped day.
