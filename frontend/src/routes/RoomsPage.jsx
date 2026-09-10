@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import DataTable from '@/components/ui/DataTable.jsx';
@@ -17,6 +18,8 @@ export default function RoomsPage() {
   const user = useAuthStore((s) => s.user);
   const selectedHostelId = useHostelStore((s) => s.selectedHostelId);
   const effectiveHostelId = user?.hostelId ?? selectedHostelId;
+
+  const navigate = useNavigate();
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -49,7 +52,18 @@ export default function RoomsPage() {
   }
 
   const columns = [
-    { key: 'roomNumber', header: 'Room' },
+    {
+      key: 'roomNumber',
+      header: 'Room',
+      render: (row) => (
+        <button
+          onClick={() => navigate(`/rooms/${row._id}`)}
+          className="font-medium text-brand-600 hover:text-brand-700"
+        >
+          {row.roomNumber}
+        </button>
+      ),
+    },
     {
       key: 'building',
       header: 'Building',
