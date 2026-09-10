@@ -6,6 +6,8 @@ import AppShell from '@/components/layout/AppShell.jsx';
 import DashboardPage from '@/routes/DashboardPage.jsx';
 import RoomsPage from '@/routes/RoomsPage.jsx';
 import RoomDetailPage from '@/routes/RoomDetailPage.jsx';
+import ResidentsPage from '@/routes/ResidentsPage.jsx';
+import ResidentDetailPage from '@/routes/ResidentDetailPage.jsx';
 
 export default function App() {
   useSessionHydration();
@@ -18,6 +20,8 @@ export default function App() {
           <Route path="/" element={<DashboardPage />} />
           <Route path="/rooms" element={<RoomsPage />} />
           <Route path="/rooms/:roomId" element={<RoomDetailPage />} />
+          <Route path="/residents" element={<ResidentsPage />} />
+          <Route path="/residents/:residentId" element={<ResidentDetailPage />} />
         </Route>
       </Route>
     </Routes>
