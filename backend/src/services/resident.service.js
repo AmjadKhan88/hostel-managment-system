@@ -22,6 +22,7 @@ export async function listResidents(user, query) {
   const filter = {};
   if (hostelId) filter.hostelId = hostelId;
   if (query.status) filter.status = query.status;
+  if (query.unallocated === 'true') filter.currentBedId = null;
   if (query.search) {
     const regex = { $regex: query.search, $options: 'i' };
     filter.$or = [{ name: regex }, { email: regex }, { phone: regex }, { registrationNumber: regex }];
