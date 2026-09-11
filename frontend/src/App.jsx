@@ -11,6 +11,7 @@ import ResidentDetailPage from '@/routes/ResidentDetailPage.jsx';
 import StaffPage from '@/routes/StaffPage.jsx';
 import ComplaintsPage from '@/routes/ComplaintsPage.jsx';
 import ComplaintDetailPage from '@/routes/ComplaintDetailPage.jsx';
+import VisitorsPage from '@/routes/VisitorsPage.jsx';
 
 export default function App() {
   useSessionHydration();
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/staff" element={<StaffPage />} />
           <Route path="/complaints" element={<ComplaintsPage />} />
           <Route path="/complaints/:complaintId" element={<ComplaintDetailPage />} />
+          <Route path="/visitors" element={<VisitorsPage />} />
         </Route>
       </Route>
     </Routes>

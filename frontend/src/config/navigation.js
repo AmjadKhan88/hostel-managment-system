@@ -30,7 +30,7 @@ export const navSections = [
       { label: 'Admissions', icon: ClipboardList },
       { label: 'Complaints', icon: MessageSquareWarning, path: '/complaints', permission: 'complaints.read' },
       { label: 'Maintenance', icon: Wrench, permission: 'maintenance.read' },
-      { label: 'Visitors', icon: Contact, permission: 'visitors.manage' },
+      { label: 'Visitors', icon: Contact, path: '/visitors', permission: 'visitors.manage' },
     ],
   },
   {
