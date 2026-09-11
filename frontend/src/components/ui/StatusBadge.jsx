@@ -4,13 +4,17 @@ const STATUS_STYLES = {
   maintenance: 'bg-warning-bg text-warning',
   inactive: 'bg-canvas text-ink-subtle',
   active: 'bg-success-bg text-success',
+  open: 'bg-warning-bg text-warning',
+  in_progress: 'bg-brand-50 text-brand-700',
+  resolved: 'bg-success-bg text-success',
+  closed: 'bg-canvas text-ink-subtle',
 };
 
 export default function StatusBadge({ status }) {
   const style = STATUS_STYLES[status] ?? 'bg-canvas text-ink-muted';
   return (
     <span className={`inline-flex rounded-pill px-2.5 py-1 text-xs font-medium capitalize ${style}`}>
-      {status}
+      {status?.replace(/_/g, ' ')}
     </span>
   );
 }
