@@ -15,6 +15,7 @@ import complaintRoutes from './complaint.routes.js';
 import visitorRoutes from './visitor.routes.js';
 import maintenanceRoutes from './maintenance.routes.js';
 import noticeRoutes from './notice.routes.js';
+import admissionRoutes from './admission.routes.js';
 
 const router = Router();
 
@@ -43,6 +44,7 @@ router.use('/complaints', complaintRoutes);
 router.use('/visitors', visitorRoutes);
 router.use('/maintenance', maintenanceRoutes);
 router.use('/notices', noticeRoutes);
+router.use('/admissions', admissionRoutes);
 
 // Further module routers (payments, reports, settings, ...) are mounted
 // here as each is implemented on its own scoped day.
