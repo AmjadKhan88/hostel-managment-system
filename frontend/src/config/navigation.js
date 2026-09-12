@@ -7,6 +7,7 @@ import {
   MessageSquareWarning,
   Wrench,
   Contact,
+  Megaphone,
   UserCheck,
   BarChart3,
   Settings,
@@ -31,6 +32,7 @@ export const navSections = [
       { label: 'Complaints', icon: MessageSquareWarning, path: '/complaints', permission: 'complaints.read' },
       { label: 'Maintenance', icon: Wrench, path: '/maintenance', permission: 'maintenance.read' },
       { label: 'Visitors', icon: Contact, path: '/visitors', permission: 'visitors.manage' },
+      { label: 'Notices', icon: Megaphone, path: '/notices', permission: 'notices.manage' },
     ],
   },
   {
