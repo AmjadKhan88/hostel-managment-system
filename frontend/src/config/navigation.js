@@ -37,7 +37,9 @@ export const navSections = [
   },
   {
     title: 'Finances',
-    items: [{ label: 'Fees & Payments', icon: Wallet, permission: 'payments.read' }],
+    items: [
+      { label: 'Fees & Payments', icon: Wallet, path: '/fees', permission: 'payments.read' },
+    ],
   },
   {
     title: 'Organization',

@@ -14,6 +14,10 @@ const STATUS_STYLES = {
   rejected: 'bg-danger-bg text-danger',
   checked_in: 'bg-brand-50 text-brand-700',
   cancelled: 'bg-canvas text-ink-subtle',
+  issued: 'bg-canvas text-ink-muted',
+  partially_paid: 'bg-warning-bg text-warning',
+  paid: 'bg-success-bg text-success',
+  void: 'bg-canvas text-ink-subtle',
 };
 
 export default function StatusBadge({ status }) {
