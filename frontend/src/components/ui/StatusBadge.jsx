@@ -8,6 +8,12 @@ const STATUS_STYLES = {
   in_progress: 'bg-brand-50 text-brand-700',
   resolved: 'bg-success-bg text-success',
   closed: 'bg-canvas text-ink-subtle',
+  applied: 'bg-canvas text-ink-muted',
+  waitlisted: 'bg-warning-bg text-warning',
+  approved: 'bg-success-bg text-success',
+  rejected: 'bg-danger-bg text-danger',
+  checked_in: 'bg-brand-50 text-brand-700',
+  cancelled: 'bg-canvas text-ink-subtle',
 };
 
 export default function StatusBadge({ status }) {
