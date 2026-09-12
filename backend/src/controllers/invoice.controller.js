@@ -21,3 +21,8 @@ export const voidInvoice = asyncHandler(async (req, res) => {
   const invoice = await invoiceService.voidInvoice(req.user, req.params.id);
   new ApiResponse(200, { invoice }, 'Invoice voided successfully').send(res);
 });
+
+export const getOutstandingBalances = asyncHandler(async (req, res) => {
+  const balances = await invoiceService.getOutstandingBalances(req.user, req.query.hostelId);
+  new ApiResponse(200, { balances }, 'Outstanding balances fetched successfully').send(res);
+});

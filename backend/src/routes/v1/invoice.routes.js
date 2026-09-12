@@ -17,6 +17,11 @@ router.post(
   invoiceController.createInvoice
 );
 router.get('/', authorize(PERMISSIONS.PAYMENTS_READ), invoiceController.listInvoices);
+router.get(
+  '/outstanding-balances',
+  authorize(PERMISSIONS.PAYMENTS_READ),
+  invoiceController.getOutstandingBalances
+);
 router.get('/:id', authorize(PERMISSIONS.PAYMENTS_READ), invoiceController.getInvoice);
 router.post('/:id/void', authorize(PERMISSIONS.PAYMENTS_CREATE), invoiceController.voidInvoice);
 

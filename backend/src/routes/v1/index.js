@@ -18,6 +18,7 @@ import noticeRoutes from './notice.routes.js';
 import admissionRoutes from './admission.routes.js';
 import feeStructureRoutes from './feeStructure.routes.js';
 import invoiceRoutes from './invoice.routes.js';
+import paymentRoutes from './payment.routes.js';
 
 const router = Router();
 
@@ -49,8 +50,9 @@ router.use('/notices', noticeRoutes);
 router.use('/admissions', admissionRoutes);
 router.use('/fee-structures', feeStructureRoutes);
 router.use('/invoices', invoiceRoutes);
+router.use('/payments', paymentRoutes);
 
-// Further module routers (payments, reports, settings, ...) are mounted
-// here as each is implemented on its own scoped day.
+// Further module routers (reports, settings, ...) are mounted here as each
+// is implemented on its own scoped day.
 
 export default router;

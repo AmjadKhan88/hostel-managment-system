@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Invoice } from '../models/Invoice.model.js';
 import { Resident } from '../models/Resident.model.js';
 import { getNextSequence } from '../models/Counter.model.js';
@@ -70,4 +71,38 @@ export async function voidInvoice(user, id) {
   invoice.status = 'void';
   await invoice.save();
   return invoice;
+}
+
+export async function getOutstandingBalances(user, hostelId) {
+  const resolvedHostelId = resolveHostelScope(user, hostelId);
+  if (!resolvedHostelId) throw ApiError.badRequest('hostelId is required');
+
+  const results = await Invoice.aggregate([
+    {
+      $match: {
+        hostelId: new mongoose.Types.ObjectId(resolvedHostelId),
+        status: { $in: ['issued', 'partially_paid'] },
+      },
+    },
+    {
+      $group: {
+        _id: '$residentId',
+        outstandingMinorUnits: { $sum: { $subtract: ['$totalMinorUnits', '$paidMinorUnits'] } },
+        invoiceCount: { $sum: 1 },
+      },
+    },
+    { $sort: { outstandingMinorUnits: -1 } },
+  ]);
+
+  const residentIds = results.map((r) => r._id);
+  const residents = await Resident.find({ _id: { $in: residentIds } }, 'name registrationNumber');
+  const residentMap = new Map(residents.map((r) => [r._id.toString(), r]));
+
+  return results.map((r) => ({
+    residentId: r._id,
+    residentName: residentMap.get(r._id.toString())?.name ?? 'Unknown',
+    registrationNumber: residentMap.get(r._id.toString())?.registrationNumber ?? '',
+    outstandingMinorUnits: r.outstandingMinorUnits,
+    invoiceCount: r.invoiceCount,
+  }));
 }
