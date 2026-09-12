@@ -13,6 +13,7 @@ import metaRoutes from './meta.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import complaintRoutes from './complaint.routes.js';
 import visitorRoutes from './visitor.routes.js';
+import maintenanceRoutes from './maintenance.routes.js';
 
 const router = Router();
 
@@ -39,8 +40,9 @@ router.use('/meta', metaRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/complaints', complaintRoutes);
 router.use('/visitors', visitorRoutes);
+router.use('/maintenance', maintenanceRoutes);
 
-// Further module routers (admissions, payments, maintenance, notices, ...)
-// are mounted here as each is implemented on its own scoped day.
+// Further module routers (admissions, payments, notices, ...) are mounted
+// here as each is implemented on its own scoped day.
 
 export default router;
