@@ -19,6 +19,7 @@ import AdmissionsPage from '@/routes/AdmissionsPage.jsx';
 import AdmissionDetailPage from '@/routes/AdmissionDetailPage.jsx';
 import FeesPage from '@/routes/FeesPage.jsx';
 import InvoiceDetailPage from '@/routes/InvoiceDetailPage.jsx';
+import ReportsPage from '@/routes/ReportsPage.jsx';
 
 export default function App() {
   useSessionHydration();
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/admissions/:admissionId" element={<AdmissionDetailPage />} />
           <Route path="/fees" element={<FeesPage />} />
           <Route path="/fees/invoices/:invoiceId" element={<InvoiceDetailPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
         </Route>
       </Route>
     </Routes>

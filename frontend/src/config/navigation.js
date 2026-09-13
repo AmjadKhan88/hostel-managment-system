@@ -45,7 +45,7 @@ export const navSections = [
     title: 'Organization',
     items: [
       { label: 'Staff', icon: UserCheck, path: '/staff', permission: 'staff.manage' },
-      { label: 'Reports', icon: BarChart3, permission: 'reports.read' },
+      { label: 'Reports', icon: BarChart3, path: '/reports', permission: 'reports.read' },
     ],
   },
 ];
