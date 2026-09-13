@@ -21,6 +21,8 @@ export function errorHandler(err, req, res, next) {
       apiError = ApiError.conflict('Duplicate value violates a unique constraint');
     } else if (err?.name === 'CastError') {
       apiError = ApiError.badRequest(`Invalid value for field "${err.path}"`);
+    } else if (err?.name === 'MulterError') {
+      apiError = ApiError.badRequest(`File upload error: ${err.message}`);
     } else if (err?.name === 'JsonWebTokenError' || err?.name === 'TokenExpiredError') {
       apiError = ApiError.unauthorized('Invalid or expired session');
     } else {

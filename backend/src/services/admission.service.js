@@ -1,5 +1,6 @@
 import { Admission } from '../models/Admission.model.js';
 import { Resident } from '../models/Resident.model.js';
+import { Document } from '../models/Document.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
@@ -107,6 +108,13 @@ export async function waitlistAdmission(user, id, { decisionNotes }) {
 
 export async function verifyDocuments(user, id) {
   const admission = await getAdmissionById(user, id);
+
+  const residentId = admission.residentId._id ?? admission.residentId;
+  const hasDocuments = await Document.exists({ residentId });
+  if (!hasDocuments) {
+    throw ApiError.badRequest('Upload at least one document for this resident before verifying');
+  }
+
   admission.documentsVerified = true;
   await admission.save();
   return admission;
