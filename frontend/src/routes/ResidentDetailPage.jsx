@@ -8,6 +8,7 @@ import ResidentFormModal from '@/features/residents/components/ResidentFormModal
 import { useAllocationHistory } from '@/features/allocations/hooks/useAllocationHistory';
 import CurrentAllocationCard from '@/features/allocations/components/CurrentAllocationCard.jsx';
 import AllocationHistory from '@/features/allocations/components/AllocationHistory.jsx';
+import DocumentsPanel from '@/features/documents/components/DocumentsPanel.jsx';
 
 export default function ResidentDetailPage() {
   const { residentId } = useParams();
@@ -76,6 +77,10 @@ export default function ResidentDetailPage() {
 
       <div className="mt-4">
         <CurrentAllocationCard resident={resident} hostelId={resident.hostelId} activeAllocation={activeAllocation} />
+      </div>
+
+      <div className="mt-4">
+        <DocumentsPanel residentId={resident._id} />
       </div>
 
       <AllocationHistory residentId={resident._id} />
