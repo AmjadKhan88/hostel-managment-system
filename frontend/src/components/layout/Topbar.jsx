@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Menu, Search, Bell, ChevronDown, LogOut } from 'lucide-react';
+import { Menu, Search, ChevronDown, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useLogout } from '@/features/auth/hooks/useLogout';
 import HostelSwitcher from './HostelSwitcher.jsx';
+import NotificationMenu from './NotificationMenu.jsx';
 
 export default function Topbar({ onOpenMobileSidebar }) {
   const user = useAuthStore((s) => s.user);
@@ -51,14 +52,7 @@ export default function Topbar({ onOpenMobileSidebar }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <button
-          className="relative rounded-control p-2 text-ink-muted hover:bg-canvas"
-          aria-label="Notifications"
-          disabled
-          title="Notifications are built on the real-time features day"
-        >
-          <Bell size={18} />
-        </button>
+        <NotificationMenu />
 
         <div className="relative" ref={menuRef}>
           <button
