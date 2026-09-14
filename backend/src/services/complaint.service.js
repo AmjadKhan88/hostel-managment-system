@@ -3,6 +3,7 @@ import { User } from '../models/User.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
+import { emitToHostel } from '../events/socketEvents.js';
 
 const RESOLVED_LIKE = ['resolved', 'closed'];
 
@@ -10,7 +11,9 @@ export async function createComplaint(user, data) {
   const hostelId = resolveHostelScope(user, data.hostelId);
   if (!hostelId) throw ApiError.badRequest('hostelId is required');
 
-  return Complaint.create({ ...data, hostelId, raisedBy: user.id });
+  const complaint = await Complaint.create({ ...data, hostelId, raisedBy: user.id });
+  emitToHostel(hostelId, 'complaint:created', { complaintId: complaint._id, subject: complaint.subject });
+  return complaint;
 }
 
 export async function listComplaints(user, query) {
@@ -75,6 +78,12 @@ export async function updateComplaint(user, id, data) {
   if (data.resolutionNotes !== undefined) complaint.resolutionNotes = data.resolutionNotes;
 
   await complaint.save();
+
+    emitToHostel(complaint.hostelId.toString(), 'complaint:updated', {
+    complaintId: complaint._id,
+    status: complaint.status,
+  });
+
   return getComplaintById(user, id);
 }
 

@@ -3,7 +3,7 @@ import { Resident } from '../models/Resident.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
-
+import { emitToHostel } from '../events/socketEvents.js';
 export async function checkInVisitor(user, data) {
   const hostelId = resolveHostelScope(user, data.hostelId);
   if (!hostelId) throw ApiError.badRequest('hostelId is required');
@@ -14,7 +14,7 @@ export async function checkInVisitor(user, data) {
     throw ApiError.badRequest('Resident does not belong to this hostel');
   }
 
-  return Visitor.create({
+  const visitor = await Visitor.create({
     hostelId,
     residentId: resident._id,
     visitorName: data.visitorName,
@@ -22,6 +22,14 @@ export async function checkInVisitor(user, data) {
     purpose: data.purpose,
     registeredBy: user.id,
   });
+
+  emitToHostel(hostelId, 'visitor:arrived', {
+    visitorId: visitor._id,
+    visitorName: visitor.visitorName,
+    residentName: resident.name,
+  });
+
+  return visitor;
 }
 
 export async function checkOutVisitor(user, id) {

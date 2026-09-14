@@ -4,7 +4,7 @@ import { getNextSequence } from '../models/Counter.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
-
+import { emitToHostel } from '../events/socketEvents.js';
 function computeInvoiceStatus(totalMinorUnits, paidMinorUnits) {
   if (paidMinorUnits <= 0) return 'issued';
   if (paidMinorUnits >= totalMinorUnits) return 'paid';
@@ -59,7 +59,15 @@ export async function recordPayment(user, data) {
     throw err;
   }
 
+    emitToHostel(hostelId, 'payment:recorded', {
+    invoiceId: invoice._id,
+    residentId: invoice.residentId,
+    amountMinorUnits: payment.amountMinorUnits,
+    receiptNumber: payment.receiptNumber,
+  });
+
   return payment;
+
 }
 
 export async function refundPayment(user, id, { reason }) {

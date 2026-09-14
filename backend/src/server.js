@@ -2,6 +2,7 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { logger } from './config/logger.js';
 import { connectDB, disconnectDB } from './config/db.js';
+import { createSocketServer } from './config/socket.js';
 
 async function bootstrap() {
   await connectDB();
@@ -13,8 +14,11 @@ async function bootstrap() {
     logger.info(`📄 API docs available at http://localhost:${env.PORT}/api-docs`);
   });
 
-  // Socket.IO, BullMQ workers, and scheduled jobs attach to `server` /
-  // the Redis connection starting from the day those features are built.
+  createSocketServer(server);
+  logger.info('🔌 Socket.IO server attached');
+
+  // BullMQ workers and scheduled jobs attach to the Redis connection
+  // starting from the automation-engine day, when that's built.
 
   const shutdown = async (signal) => {
     logger.info(`${signal} received — shutting down gracefully`);

@@ -4,6 +4,7 @@ import { Document } from '../models/Document.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
+import { emitToHostel } from '../events/socketEvents.js';
 import * as allocationService from './allocation.service.js';
 
 const DECIDABLE_FROM = ['applied', 'waitlisted'];
@@ -23,12 +24,14 @@ export async function createAdmission(user, data) {
   }
 
   try {
-    return await Admission.create({
+    const admission = await Admission.create({
       hostelId,
       residentId: resident._id,
       requestedCategory: data.requestedCategory,
       createdBy: user.id,
     });
+    emitToHostel(hostelId, 'admission:created', { admissionId: admission._id, residentId: resident._id });
+    return admission;
   } catch (err) {
     if (err?.code === 11000) {
       throw ApiError.conflict('An admission record already exists for this resident');

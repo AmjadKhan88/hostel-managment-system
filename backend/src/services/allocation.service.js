@@ -4,7 +4,7 @@ import { Resident } from '../models/Resident.model.js';
 import { Room } from '../models/Room.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
-
+import { emitToHostel } from '../events/socketEvents.js';
 async function loadBedWithRoom(bedId) {
   const bed = await Bed.findById(bedId);
   if (!bed) throw ApiError.notFound('Bed not found');
@@ -86,6 +86,13 @@ export async function allocateBed(user, { residentId, bedId, notes }) {
     throw err;
   }
 
+    emitToHostel(hostelId, 'allocation:changed', {
+    type: 'allocated',
+    residentId: resident._id,
+    bedId: bed._id,
+    roomId: room._id,
+  });
+
   return allocation;
 }
 
@@ -143,13 +150,20 @@ export async function transferResident(user, residentId, { newBedId, notes }) {
     throw err;
   }
 
+    emitToHostel(hostelId, 'allocation:changed', {
+    type: 'transferred',
+    residentId: resident._id,
+    bedId: newBed._id,
+    roomId: newRoom._id,
+  });
+
   return newAllocation;
 }
 
 export async function checkoutResident(user, residentId) {
   const resident = await Resident.findById(residentId);
   if (!resident) throw ApiError.notFound('Resident not found');
-  resolveHostelScope(user, resident.hostelId.toString());
+    const hostelId = resolveHostelScope(user, resident.hostelId.toString());
 
   if (!resident.currentBedId) {
     throw ApiError.badRequest('Resident has no active bed allocation to check out from');
@@ -166,6 +180,12 @@ export async function checkoutResident(user, residentId) {
   resident.currentBedId = null;
   resident.status = 'checked_out';
   await resident.save();
+
+    emitToHostel(hostelId, 'allocation:changed', {
+    type: 'checked_out',
+    residentId: resident._id,
+    bedId: bed._id,
+  });
 
   return allocation;
 }
