@@ -4,6 +4,8 @@ export const createHostelSchema = z.object({
   name: z.string().min(2).max(120),
   timezone: z.string().optional(),
   currency: z.string().length(3).optional(),
+  invoicePrefix: z.string().min(1).max(10).optional(),
+  defaultDueDays: z.coerce.number().int().min(0).max(90).optional(),
   address: z
     .object({
       line1: z.string().optional(),

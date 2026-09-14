@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { Invoice } from '../models/Invoice.model.js';
+import { Hostel } from '../models/Hostel.model.js';
 import { Resident } from '../models/Resident.model.js';
 import { getNextSequence } from '../models/Counter.model.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -14,14 +15,23 @@ export async function createInvoice(user, data) {
   const hostelId = resolveHostelScope(user, data.hostelId);
   if (!hostelId) throw ApiError.badRequest('hostelId is required');
 
-  const resident = await Resident.findById(data.residentId);
+  const [resident, hostel] = await Promise.all([Resident.findById(data.residentId), Hostel.findById(hostelId)]);
+
   if (!resident) throw ApiError.notFound('Resident not found');
   if (resident.hostelId.toString() !== hostelId) {
     throw ApiError.badRequest('Resident does not belong to this hostel');
   }
 
   const seq = await getNextSequence(`invoice:${hostelId}`);
-  const invoiceNumber = `INV-${new Date().getFullYear()}-${String(seq).padStart(6, '0')}`;
+  const prefix = hostel?.invoicePrefix || 'INV';
+  const invoiceNumber = `${prefix}-${new Date().getFullYear()}-${String(seq).padStart(6, '0')}`;
+
+  let dueDate = data.dueDate;
+  if (!dueDate) {
+    const days = hostel?.defaultDueDays ?? 7;
+    dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + days);
+  }
 
   return Invoice.create({
     hostelId,
@@ -29,7 +39,7 @@ export async function createInvoice(user, data) {
     invoiceNumber,
     items: data.items,
     totalMinorUnits: computeTotal(data.items),
-    dueDate: data.dueDate,
+    dueDate,
     notes: data.notes,
     createdBy: user.id,
   });

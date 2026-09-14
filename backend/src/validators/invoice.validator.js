@@ -10,6 +10,6 @@ export const createInvoiceSchema = z.object({
   hostelId: z.string().optional(),
   residentId: z.string().min(1, 'residentId is required'),
   items: z.array(invoiceItemSchema).min(1, 'At least one line item is required'),
-  dueDate: z.coerce.date(),
+  dueDate: z.coerce.date().optional(),
   notes: z.string().max(1000).optional(),
 });

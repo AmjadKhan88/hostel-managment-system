@@ -53,5 +53,6 @@ export const navSections = [
 export const settingsNavItem = {
   label: 'Settings',
   icon: Settings,
+  path: '/settings',
   permission: 'settings.manage',
 };

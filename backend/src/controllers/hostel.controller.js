@@ -13,11 +13,16 @@ export const listHostels = asyncHandler(async (req, res) => {
 });
 
 export const getHostel = asyncHandler(async (req, res) => {
-  const hostel = await hostelService.getHostelById(req.params.id);
+  const hostel = await hostelService.getHostelById(req.user, req.params.id);
   new ApiResponse(200, { hostel }, 'Hostel fetched successfully').send(res);
 });
 
 export const updateHostel = asyncHandler(async (req, res) => {
-  const hostel = await hostelService.updateHostel(req.params.id, req.body);
+  const hostel = await hostelService.updateHostel(req.user, req.params.id, req.body);
   new ApiResponse(200, { hostel }, 'Hostel updated successfully').send(res);
+});
+
+export const uploadLogo = asyncHandler(async (req, res) => {
+  const hostel = await hostelService.uploadHostelLogo(req.user, req.params.id, req.file);
+  new ApiResponse(200, { hostel }, 'Logo uploaded successfully').send(res);
 });
