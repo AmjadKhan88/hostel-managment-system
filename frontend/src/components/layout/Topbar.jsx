@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { Menu, Search, ChevronDown, LogOut } from 'lucide-react';
+import { Menu, ChevronDown, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useLogout } from '@/features/auth/hooks/useLogout';
 import HostelSwitcher from './HostelSwitcher.jsx';
 import NotificationMenu from './NotificationMenu.jsx';
+import GlobalSearch from './GlobalSearch.jsx';
 
 export default function Topbar({ onOpenMobileSidebar }) {
   const user = useAuthStore((s) => s.user);
@@ -39,16 +40,7 @@ export default function Topbar({ onOpenMobileSidebar }) {
 
         <HostelSwitcher />
 
-        <div className="relative hidden max-w-sm flex-1 sm:block">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
-          <input
-            type="search"
-            placeholder="Search anything…"
-            disabled
-            title="Global search is built on its own scoped day"
-            className="w-full rounded-control border border-border bg-canvas py-2 pl-9 pr-3 text-sm text-ink placeholder:text-ink-subtle disabled:cursor-not-allowed"
-          />
-        </div>
+        <GlobalSearch />
       </div>
 
       <div className="flex items-center gap-2">

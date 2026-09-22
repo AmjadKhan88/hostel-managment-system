@@ -20,6 +20,7 @@ import feeStructureRoutes from './feeStructure.routes.js';
 import invoiceRoutes from './invoice.routes.js';
 import paymentRoutes from './payment.routes.js';
 import reportsRoutes from './reports.routes.js';
+import searchRoutes from './search.routes.js';
 
 const router = Router();
 
@@ -53,6 +54,7 @@ router.use('/fee-structures', feeStructureRoutes);
 router.use('/invoices', invoiceRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/reports', reportsRoutes);
+router.use('/search', searchRoutes);
 
 // Further module routers (settings, ...) are mounted here as each is
 // implemented on its own scoped day.
