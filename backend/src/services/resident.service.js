@@ -2,6 +2,7 @@ import { Resident } from '../models/Resident.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
+import { recordAuditLog } from './audit.service.js';
 
 export async function createResident(user, data) {
   const hostelId = resolveHostelScope(user, data.hostelId);
@@ -12,7 +13,18 @@ export async function createResident(user, data) {
     throw ApiError.conflict('A resident with this registration number already exists in this hostel');
   }
 
-  return Resident.create({ ...data, hostelId });
+  const resident = await Resident.create({ ...data, hostelId });
+
+  recordAuditLog({
+    hostelId,
+    actorId: user.id,
+    action: 'resident.created',
+    entityType: 'Resident',
+    entityId: resident._id,
+    metadata: { name: resident.name, registrationNumber: resident.registrationNumber },
+  });
+
+  return resident;
 }
 
 export async function listResidents(user, query) {
@@ -47,5 +59,15 @@ export async function updateResident(user, id, data) {
   const resident = await getResidentById(user, id);
   Object.assign(resident, data);
   await resident.save();
+
+  recordAuditLog({
+    hostelId: resident.hostelId.toString(),
+    actorId: user.id,
+    action: 'resident.updated',
+    entityType: 'Resident',
+    entityId: resident._id,
+    metadata: { fields: Object.keys(data) },
+  });
+
   return resident;
 }

@@ -2,6 +2,7 @@ import { Role } from '../models/Role.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { assertCanGrantPermissions } from '../utils/permissionGuard.js';
+import { recordAuditLog } from './audit.service.js';
 
 function slugify(name) {
   return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -47,5 +48,15 @@ export async function updateRole(user, id, data) {
   }
 
   await role.save();
+
+  recordAuditLog({
+    hostelId: role.hostelId?.toString() ?? null,
+    actorId: user.id,
+    action: 'role.updated',
+    entityType: 'Role',
+    entityId: role._id,
+    metadata: { name: role.name, permissions: role.permissions },
+  });
+
   return role;
 }

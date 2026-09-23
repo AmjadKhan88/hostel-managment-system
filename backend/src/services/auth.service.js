@@ -3,6 +3,7 @@ import { Role } from '../models/Role.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/tokens.js';
 import { SUPER_ADMIN_WILDCARD } from '../constants/permissions.js';
+import { recordAuditLog } from './audit.service.js';
 
 function buildAuthPayload(user, role) {
   const permissions = role.permissions.includes(SUPER_ADMIN_WILDCARD)
@@ -21,11 +22,29 @@ function buildAuthPayload(user, role) {
 export async function login({ email, password }) {
   const user = await User.findOne({ email }).select('+passwordHash');
   if (!user || user.status !== 'active') {
+    recordAuditLog({
+      hostelId: user?.hostelId ?? null,
+      actorId: user?._id ?? null,
+      actorName: email,
+      action: 'auth.login_failed',
+      entityType: 'User',
+      entityId: user?._id ?? null,
+      metadata: { reason: 'invalid_credentials_or_inactive' },
+    });
     throw ApiError.unauthorized('Invalid email or password');
   }
 
   const isValid = await user.comparePassword(password);
   if (!isValid) {
+    recordAuditLog({
+      hostelId: user.hostelId,
+      actorId: user._id,
+      actorName: user.name,
+      action: 'auth.login_failed',
+      entityType: 'User',
+      entityId: user._id,
+      metadata: { reason: 'wrong_password' },
+    });
     throw ApiError.unauthorized('Invalid email or password');
   }
 
@@ -40,6 +59,15 @@ export async function login({ email, password }) {
 
   user.lastLoginAt = new Date();
   await user.save();
+
+  recordAuditLog({
+    hostelId: user.hostelId,
+    actorId: user._id,
+    actorName: user.name,
+    action: 'auth.login',
+    entityType: 'User',
+    entityId: user._id,
+  });
 
   return {
     accessToken,

@@ -3,6 +3,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
 import { SUPER_ADMIN_WILDCARD } from '../constants/permissions.js';
 import { uploadBufferToCloudinary, cloudinary } from '../config/cloudinary.js';
+import { recordAuditLog } from './audit.service.js';
 
 function slugify(name) {
   return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -43,6 +44,16 @@ export async function updateHostel(user, id, data) {
   assertCanAccessHostel(user, id);
   const hostel = await Hostel.findByIdAndUpdate(id, data, { new: true, runValidators: true });
   if (!hostel) throw ApiError.notFound('Hostel not found');
+
+  recordAuditLog({
+    hostelId: id,
+    actorId: user.id,
+    action: 'settings.updated',
+    entityType: 'Hostel',
+    entityId: hostel._id,
+    metadata: { fields: Object.keys(data) },
+  });
+
   return hostel;
 }
 
