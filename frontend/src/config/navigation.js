@@ -10,6 +10,7 @@ import {
   Megaphone,
   UserCheck,
   BarChart3,
+  History,
   Settings,
 } from 'lucide-react';
 
@@ -37,15 +38,14 @@ export const navSections = [
   },
   {
     title: 'Finances',
-    items: [
-      { label: 'Fees & Payments', icon: Wallet, path: '/fees', permission: 'payments.read' },
-    ],
+    items: [{ label: 'Fees & Payments', icon: Wallet, path: '/fees', permission: 'payments.read' }],
   },
   {
     title: 'Organization',
     items: [
       { label: 'Staff', icon: UserCheck, path: '/staff', permission: 'staff.manage' },
       { label: 'Reports', icon: BarChart3, path: '/reports', permission: 'reports.read' },
+      { label: 'Audit Log', icon: History, path: '/audit-log', permission: 'settings.manage' },
     ],
   },
 ];
