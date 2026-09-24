@@ -35,11 +35,15 @@ export class GeminiProvider extends AIProvider {
     }
 
     const data = await response.json();
-    const part = data.candidates?.[0]?.content?.parts?.[0];
+    const content = data.candidates?.[0]?.content;
+    const parts = content?.parts ?? [];
 
     return {
-      text: part?.text ?? null,
-      functionCall: part?.functionCall ?? null,
+      text: parts.find((item) => item.text)?.text ?? null,
+      functionCall: parts.find((item) => item.functionCall)?.functionCall ?? null,
+      // Preserve the original parts exactly: functionCall parts may carry
+      // thought_signature metadata required in the next Gemini request.
+      modelParts: parts,
       raw: data,
     };
   }

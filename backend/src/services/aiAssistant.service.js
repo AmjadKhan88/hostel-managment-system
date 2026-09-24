@@ -66,7 +66,7 @@ export async function askAdminAssistant(user, hostelId, question) {
     const followUp = await provider.complete({
       messages: [
         ...messages,
-        { role: 'model', parts: [{ functionCall: firstResponse.functionCall }] },
+        { role: 'model', parts: firstResponse.modelParts },
         { role: 'user', parts: [{ functionResponse: { name, response: toolResult } }] },
       ],
       systemInstruction: SYSTEM_INSTRUCTION,
