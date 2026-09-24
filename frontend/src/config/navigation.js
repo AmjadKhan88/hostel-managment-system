@@ -12,6 +12,7 @@ import {
   BarChart3,
   History,
   Settings,
+  Sparkles,
 } from 'lucide-react';
 
 /**
@@ -30,7 +31,12 @@ export const navSections = [
       { label: 'Residents', icon: Users, path: '/residents', permission: 'student.read' },
       { label: 'Rooms & Beds', icon: BedDouble, path: '/rooms', permission: 'room.read' },
       { label: 'Admissions', icon: ClipboardList, path: '/admissions', permission: 'student.read' },
-      { label: 'Complaints', icon: MessageSquareWarning, path: '/complaints', permission: 'complaints.read' },
+      {
+        label: 'Complaints',
+        icon: MessageSquareWarning,
+        path: '/complaints',
+        permission: 'complaints.read',
+      },
       { label: 'Maintenance', icon: Wrench, path: '/maintenance', permission: 'maintenance.read' },
       { label: 'Visitors', icon: Contact, path: '/visitors', permission: 'visitors.manage' },
       { label: 'Notices', icon: Megaphone, path: '/notices', permission: 'notices.manage' },
@@ -45,6 +51,7 @@ export const navSections = [
     items: [
       { label: 'Staff', icon: UserCheck, path: '/staff', permission: 'staff.manage' },
       { label: 'Reports', icon: BarChart3, path: '/reports', permission: 'reports.read' },
+      { label: 'AI Assistant', icon: Sparkles, path: '/ai-assistant', permission: 'reports.read' },
       { label: 'Audit Log', icon: History, path: '/audit-log', permission: 'settings.manage' },
     ],
   },

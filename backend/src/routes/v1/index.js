@@ -23,18 +23,23 @@ import reportsRoutes from './reports.routes.js';
 import searchRoutes from './search.routes.js';
 import auditRoutes from './audit.routes.js';
 import automationRoutes from './automation.routes.js';
+import aiAssistantRoutes from './aiAssistant.routes.js';
 
 const router = Router();
 
 router.get('/health', (req, res) => {
   const dbStates = ['disconnected', 'connected', 'connecting', 'disconnecting'];
 
-  new ApiResponse(200, {
-    status: 'ok',
-    uptimeSeconds: Math.round(process.uptime()),
-    database: dbStates[mongoose.connection.readyState] ?? 'unknown',
-    timestamp: new Date().toISOString(),
-  }, 'Service is healthy').send(res);
+  new ApiResponse(
+    200,
+    {
+      status: 'ok',
+      uptimeSeconds: Math.round(process.uptime()),
+      database: dbStates[mongoose.connection.readyState] ?? 'unknown',
+      timestamp: new Date().toISOString(),
+    },
+    'Service is healthy'
+  ).send(res);
 });
 
 router.use('/auth', authRoutes);
@@ -59,6 +64,7 @@ router.use('/reports', reportsRoutes);
 router.use('/search', searchRoutes);
 router.use('/audit-logs', auditRoutes);
 router.use('/automation', automationRoutes);
+router.use('/ai-assistant', aiAssistantRoutes);
 
 // Further module routers (settings, ...) are mounted here as each is
 // implemented on its own scoped day.

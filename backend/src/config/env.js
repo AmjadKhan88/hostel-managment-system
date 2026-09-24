@@ -28,6 +28,7 @@ const envSchema = z.object({
 
   AI_PROVIDER: z.enum(['gemini', 'none']).default('none'),
   GEMINI_API_KEY: z.string().optional().default(''),
+  GEMINI_MODEL: z.string().optional().default('gemini-3.5-flash'),
 
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 
