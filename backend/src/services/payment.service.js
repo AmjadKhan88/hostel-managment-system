@@ -5,6 +5,8 @@ import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
 import { emitToHostel } from '../events/socketEvents.js';
+import { recordAuditLog } from './audit.service.js';
+
 function computeInvoiceStatus(totalMinorUnits, paidMinorUnits) {
   if (paidMinorUnits <= 0) return 'issued';
   if (paidMinorUnits >= totalMinorUnits) return 'paid';
@@ -18,12 +20,6 @@ async function loadInvoiceForHostel(user, invoiceId) {
   return { invoice, hostelId };
 }
 
-/**
- * NOTE: no multi-document transactions in this environment (standalone
- * MongoDB — see docs/ARCHITECTURE.md). The payment is written first, then
- * the invoice is updated; if the invoice update fails, the payment is
- * rolled back (best-effort). This mirrors allocation.service.js's pattern.
- */
 export async function recordPayment(user, data) {
   const { invoice, hostelId } = await loadInvoiceForHostel(user, data.invoiceId);
 
@@ -59,21 +55,34 @@ export async function recordPayment(user, data) {
     throw err;
   }
 
-    emitToHostel(hostelId, 'payment:recorded', {
+  emitToHostel(hostelId, 'payment:recorded', {
     invoiceId: invoice._id,
     residentId: invoice.residentId,
     amountMinorUnits: payment.amountMinorUnits,
     receiptNumber: payment.receiptNumber,
   });
 
-  return payment;
+  recordAuditLog({
+    hostelId,
+    actorId: user.id,
+    action: 'payment.recorded',
+    entityType: 'Payment',
+    entityId: payment._id,
+    metadata: {
+      invoiceId: invoice._id,
+      amountMinorUnits: payment.amountMinorUnits,
+      receiptNumber: payment.receiptNumber,
+      method: payment.method,
+    },
+  });
 
+  return payment;
 }
 
 export async function refundPayment(user, id, { reason }) {
   const payment = await Payment.findById(id);
   if (!payment) throw ApiError.notFound('Payment not found');
-  resolveHostelScope(user, payment.hostelId.toString());
+  const hostelId = resolveHostelScope(user, payment.hostelId.toString());
 
   if (payment.status === 'refunded') {
     throw ApiError.conflict('This payment has already been refunded');
@@ -95,12 +104,20 @@ export async function refundPayment(user, id, { reason }) {
     payment.refundReason = reason ?? '';
     await payment.save();
   } catch (err) {
-    // Roll back the invoice change since the payment update failed.
     invoice.paidMinorUnits = previousInvoiceState.paidMinorUnits;
     invoice.status = previousInvoiceState.status;
     await invoice.save().catch(() => {});
     throw err;
   }
+
+  recordAuditLog({
+    hostelId,
+    actorId: user.id,
+    action: 'payment.refunded',
+    entityType: 'Payment',
+    entityId: payment._id,
+    metadata: { invoiceId: invoice._id, amountMinorUnits: payment.amountMinorUnits, reason: payment.refundReason },
+  });
 
   return payment;
 }

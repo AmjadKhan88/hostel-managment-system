@@ -5,6 +5,8 @@ import { Room } from '../models/Room.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { emitToHostel } from '../events/socketEvents.js';
+import { recordAuditLog } from './audit.service.js';
+
 async function loadBedWithRoom(bedId) {
   const bed = await Bed.findById(bedId);
   if (!bed) throw ApiError.notFound('Bed not found');
@@ -23,16 +25,6 @@ async function endActiveAllocation(resident, bed, { endedBy, endReason }) {
   return allocation;
 }
 
-/**
- * NOTE: this environment runs MongoDB as a standalone server (no replica
- * set), so true multi-document transactions aren't available here — see
- * docs/ARCHITECTURE.md. Each step below is applied in an order chosen so
- * that a failure partway through is safe to recover from, and failures are
- * compensated (best-effort) rather than left inconsistent. This is a
- * reduced guarantee compared to a transactional implementation; revisit
- * with mongoose sessions if this ever runs against a replica set (e.g.
- * MongoDB Atlas) in production.
- */
 export async function allocateBed(user, { residentId, bedId, notes }) {
   const resident = await Resident.findById(residentId);
   if (!resident) throw ApiError.notFound('Resident not found');
@@ -50,9 +42,6 @@ export async function allocateBed(user, { residentId, bedId, notes }) {
     throw ApiError.conflict(`Bed is not available (current status: ${bed.status})`);
   }
 
-  // 1. Create the allocation record first — the partial unique index on
-  //    { residentId, status: 'active' } / { bedId, status: 'active' } will
-  //    reject this if a race condition already allocated either side.
   let allocation;
   try {
     allocation = await Allocation.create({
@@ -70,8 +59,6 @@ export async function allocateBed(user, { residentId, bedId, notes }) {
     throw err;
   }
 
-  // 2. Update the bed and resident. If either write fails here, the
-  //    allocation record above is rolled back to keep state consistent.
   try {
     bed.status = 'occupied';
     bed.currentResidentId = resident._id;
@@ -86,11 +73,20 @@ export async function allocateBed(user, { residentId, bedId, notes }) {
     throw err;
   }
 
-    emitToHostel(hostelId, 'allocation:changed', {
+  emitToHostel(hostelId, 'allocation:changed', {
     type: 'allocated',
     residentId: resident._id,
     bedId: bed._id,
     roomId: room._id,
+  });
+
+  recordAuditLog({
+    hostelId,
+    actorId: user.id,
+    action: 'allocation.assigned',
+    entityType: 'Allocation',
+    entityId: allocation._id,
+    metadata: { residentId: resident._id, bedId: bed._id, roomId: room._id },
   });
 
   return allocation;
@@ -118,9 +114,6 @@ export async function transferResident(user, residentId, { newBedId, notes }) {
     throw ApiError.badRequest('Resident is already assigned to this bed');
   }
 
-  // End the old allocation and free the old bed first — this is the safer
-  // order if something fails midway, since a resident briefly unassigned
-  // is less harmful than a resident stuck on two beds at once.
   await endActiveAllocation(resident, currentBed, { endedBy: user.id, endReason: 'transfer' });
   currentBed.status = 'available';
   currentBed.currentResidentId = null;
@@ -150,11 +143,20 @@ export async function transferResident(user, residentId, { newBedId, notes }) {
     throw err;
   }
 
-    emitToHostel(hostelId, 'allocation:changed', {
+  emitToHostel(hostelId, 'allocation:changed', {
     type: 'transferred',
     residentId: resident._id,
     bedId: newBed._id,
     roomId: newRoom._id,
+  });
+
+  recordAuditLog({
+    hostelId,
+    actorId: user.id,
+    action: 'allocation.transferred',
+    entityType: 'Allocation',
+    entityId: newAllocation._id,
+    metadata: { residentId: resident._id, fromBedId: currentBed._id, toBedId: newBed._id },
   });
 
   return newAllocation;
@@ -163,7 +165,7 @@ export async function transferResident(user, residentId, { newBedId, notes }) {
 export async function checkoutResident(user, residentId) {
   const resident = await Resident.findById(residentId);
   if (!resident) throw ApiError.notFound('Resident not found');
-    const hostelId = resolveHostelScope(user, resident.hostelId.toString());
+  const hostelId = resolveHostelScope(user, resident.hostelId.toString());
 
   if (!resident.currentBedId) {
     throw ApiError.badRequest('Resident has no active bed allocation to check out from');
@@ -181,10 +183,19 @@ export async function checkoutResident(user, residentId) {
   resident.status = 'checked_out';
   await resident.save();
 
-    emitToHostel(hostelId, 'allocation:changed', {
+  emitToHostel(hostelId, 'allocation:changed', {
     type: 'checked_out',
     residentId: resident._id,
     bedId: bed._id,
+  });
+
+  recordAuditLog({
+    hostelId,
+    actorId: user.id,
+    action: 'allocation.checked_out',
+    entityType: 'Allocation',
+    entityId: allocation._id,
+    metadata: { residentId: resident._id, bedId: bed._id },
   });
 
   return allocation;

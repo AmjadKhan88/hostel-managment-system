@@ -6,6 +6,7 @@ import { getNextSequence } from '../models/Counter.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
+import { recordAuditLog } from './audit.service.js';
 
 function computeTotal(items) {
   return items.reduce((sum, item) => sum + item.amountMinorUnits, 0);
@@ -33,7 +34,7 @@ export async function createInvoice(user, data) {
     dueDate.setDate(dueDate.getDate() + days);
   }
 
-  return Invoice.create({
+  const invoice = await Invoice.create({
     hostelId,
     residentId: resident._id,
     invoiceNumber,
@@ -43,6 +44,21 @@ export async function createInvoice(user, data) {
     notes: data.notes,
     createdBy: user.id,
   });
+
+  recordAuditLog({
+    hostelId,
+    actorId: user.id,
+    action: 'invoice.generated',
+    entityType: 'Invoice',
+    entityId: invoice._id,
+    metadata: {
+      invoiceNumber: invoice.invoiceNumber,
+      totalMinorUnits: invoice.totalMinorUnits,
+      residentId: resident._id,
+    },
+  });
+
+  return invoice;
 }
 
 export async function listInvoices(user, query) {
@@ -80,6 +96,16 @@ export async function voidInvoice(user, id) {
   }
   invoice.status = 'void';
   await invoice.save();
+
+  recordAuditLog({
+    hostelId: invoice.hostelId.toString(),
+    actorId: user.id,
+    action: 'invoice.voided',
+    entityType: 'Invoice',
+    entityId: invoice._id,
+    metadata: { invoiceNumber: invoice.invoiceNumber },
+  });
+
   return invoice;
 }
 
