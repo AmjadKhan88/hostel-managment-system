@@ -25,9 +25,6 @@ const invoiceSchema = new mongoose.Schema(
       },
     },
 
-    // Denormalized totals, recomputed whenever items/payments change —
-    // avoids summing on every read. paidMinorUnits is updated by the
-    // Payments service (Day 23), not directly here.
     totalMinorUnits: { type: Number, required: true, min: 0 },
     paidMinorUnits: { type: Number, default: 0, min: 0 },
 
@@ -37,7 +34,14 @@ const invoiceSchema = new mongoose.Schema(
     issuedAt: { type: Date, default: Date.now },
 
     notes: { type: String, trim: true, default: '' },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // Manual invoices (Day 22) have an actor; system-generated ones
+    // (today's automation) don't, so this is no longer required.
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+
+    // Set only by the automated monthly-invoice job. A database-level
+    // guarantee — not just application logic — that a retried or re-run
+    // job can never create the same month's charge twice.
+    idempotencyKey: { type: String, default: null },
   },
   { timestamps: true }
 );
@@ -45,6 +49,7 @@ const invoiceSchema = new mongoose.Schema(
 invoiceSchema.index({ hostelId: 1, invoiceNumber: 1 }, { unique: true });
 invoiceSchema.index({ hostelId: 1, residentId: 1 });
 invoiceSchema.index({ hostelId: 1, status: 1 });
+invoiceSchema.index({ hostelId: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
 
 invoiceSchema.virtual('balanceMinorUnits').get(function () {
   return this.totalMinorUnits - this.paidMinorUnits;

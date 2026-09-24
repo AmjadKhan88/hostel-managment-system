@@ -5,12 +5,15 @@ import { useNotificationsStore } from '@/store/notificationsStore';
 import { useToastStore } from '@/store/toastStore';
 
 const EVENT_MESSAGES = {
-  'payment:recorded': (p) => `Payment of ${(p.amountMinorUnits / 100).toFixed(2)} recorded (${p.receiptNumber})`,
+  'payment:recorded': (p) =>
+    `Payment of ${(p.amountMinorUnits / 100).toFixed(2)} recorded (${p.receiptNumber})`,
   'complaint:created': (p) => `New complaint: ${p.subject}`,
   'complaint:updated': (p) => `Complaint status changed to ${p.status.replace('_', ' ')}`,
   'admission:created': () => 'New admission application submitted',
   'visitor:arrived': (p) => `${p.visitorName} checked in to see ${p.residentName}`,
   'allocation:changed': (p) => `Room allocation ${p.type.replace('_', ' ')}`,
+  'invoice:generated': (p) => `Invoice ${p.invoiceNumber} generated automatically`,
+  'payment:overdue': (p) => `${p.invoiceNumber} is ${p.daysOverdue}d overdue (${p.residentName})`,
 };
 
 /**
@@ -32,7 +35,12 @@ export function useRealtimeNotifications() {
     const handlers = Object.entries(EVENT_MESSAGES).map(([event, formatMessage]) => {
       const handler = (payload) => {
         const message = formatMessage(payload);
-        addNotification({ id: `${event}-${Date.now()}`, event, message, at: new Date().toISOString() });
+        addNotification({
+          id: `${event}-${Date.now()}`,
+          event,
+          message,
+          at: new Date().toISOString(),
+        });
         addToast(message);
       };
       socket.on(event, handler);
