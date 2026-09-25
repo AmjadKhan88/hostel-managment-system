@@ -3,7 +3,11 @@ import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { validate } from '../../middlewares/validate.js';
 import { createRateLimiter } from '../../middlewares/rateLimiter.js';
-import { askAssistantSchema } from '../../validators/aiAssistant.validator.js';
+import {
+  askAssistantSchema,
+  generateNoticeDraftSchema,
+  triageComplaintSchema,
+} from '../../validators/aiAssistant.validator.js';
 import { PERMISSIONS } from '../../constants/permissions.js';
 import * as aiAssistantController from '../../controllers/aiAssistant.controller.js';
 
@@ -26,5 +30,21 @@ router.post(
   aiAssistantController.ask
 );
 router.get('/history', authorize(PERMISSIONS.REPORTS_READ), aiAssistantController.getHistory);
+
+router.post(
+  '/notice-draft',
+  aiLimiter,
+  authorize(PERMISSIONS.NOTICES_MANAGE),
+  validate({ body: generateNoticeDraftSchema }),
+  aiAssistantController.generateNoticeDraft
+);
+
+router.post(
+  '/triage-complaint',
+  aiLimiter,
+  authorize(PERMISSIONS.COMPLAINTS_MANAGE),
+  validate({ body: triageComplaintSchema }),
+  aiAssistantController.triageComplaint
+);
 
 export default router;
