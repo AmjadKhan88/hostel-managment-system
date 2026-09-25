@@ -12,4 +12,10 @@ export const aiApi = {
       { hostelId, description },
       { timeout: 60_000 }
     ),
+  suggestRooms: (hostelId, constraints) =>
+    apiClient.post(
+      '/ai-assistant/suggest-rooms',
+      { hostelId, ...constraints },
+      { timeout: 60_000 }
+    ),
 };

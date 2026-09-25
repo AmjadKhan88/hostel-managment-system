@@ -29,3 +29,8 @@ export const triageComplaint = asyncHandler(async (req, res) => {
   );
   new ApiResponse(200, { suggestion }, 'Complaint triaged successfully').send(res);
 });
+
+export const suggestRooms = asyncHandler(async (req, res) => {
+  const result = await aiAssistantService.suggestRooms(req.user, req.body.hostelId, req.body);
+  new ApiResponse(200, result, 'Room suggestions generated successfully').send(res);
+});

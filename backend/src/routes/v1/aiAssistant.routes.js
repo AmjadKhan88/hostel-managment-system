@@ -7,6 +7,7 @@ import {
   askAssistantSchema,
   generateNoticeDraftSchema,
   triageComplaintSchema,
+  suggestRoomsSchema,
 } from '../../validators/aiAssistant.validator.js';
 import { PERMISSIONS } from '../../constants/permissions.js';
 import * as aiAssistantController from '../../controllers/aiAssistant.controller.js';
@@ -45,6 +46,14 @@ router.post(
   authorize(PERMISSIONS.COMPLAINTS_MANAGE),
   validate({ body: triageComplaintSchema }),
   aiAssistantController.triageComplaint
+);
+
+router.post(
+  '/suggest-rooms',
+  aiLimiter,
+  authorize(PERMISSIONS.ROOM_ALLOCATE),
+  validate({ body: suggestRoomsSchema }),
+  aiAssistantController.suggestRooms
 );
 
 export default router;

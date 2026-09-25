@@ -2,6 +2,10 @@ import { getAIProvider } from '../ai/index.js';
 import { AI_TOOLS } from '../ai/tools.js';
 import { AIConversation } from '../models/AIConversation.model.js';
 import { COMPLAINT_CATEGORIES, COMPLAINT_PRIORITIES } from '../models/Complaint.model.js';
+import { Room } from '../models/Room.model.js';
+import { Bed } from '../models/Bed.model.js';
+import { Building } from '../models/Building.model.js';
+import { FeeStructure } from '../models/FeeStructure.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { recordAuditLog } from './audit.service.js';
@@ -223,4 +227,97 @@ export async function triageComplaint(user, hostelId, description) {
   });
 
   return result.data;
+}
+
+/**
+ * Suggests available rooms for a new resident. The AI never decides what
+ * exists or is available — that's the deterministic query below, same as
+ * every other page in the app. The AI only ranks/explains the real
+ * candidate list it's handed, and is instructed to never reference
+ * protected personal attributes, per the spec's non-discrimination rule.
+ * If the AI call fails, the real candidate list still returns — the
+ * explanation is a nice-to-have, not the source of truth.
+ */
+export async function suggestRooms(
+  user,
+  hostelId,
+  { category, maxBudgetMinorUnits, minCapacity, facilities }
+) {
+  const resolvedHostelId = resolveHostelScope(user, hostelId);
+  if (!resolvedHostelId) throw ApiError.badRequest('hostelId is required');
+
+  const roomFilter = { hostelId: resolvedHostelId, status: 'available' };
+  if (category) roomFilter.category = category;
+  if (minCapacity) roomFilter.capacity = { $gte: minCapacity };
+
+  const candidateRooms = await Room.find(roomFilter).limit(20);
+
+  const candidates = [];
+  for (const room of candidateRooms) {
+    const availableBeds = await Bed.countDocuments({ roomId: room._id, status: 'available' });
+    if (availableBeds === 0) continue;
+
+    // Budget is checked against a matching fee structure if one exists for
+    // this room's category; rooms with no matching fee structure are still
+    // included (budget just isn't checked for them) rather than silently
+    // dropped.
+    let matchesBudget = true;
+    if (maxBudgetMinorUnits) {
+      const fee = await FeeStructure.findOne({
+        hostelId: resolvedHostelId,
+        roomCategory: room.category,
+        feeType: 'rent',
+        isActive: true,
+      });
+      if (fee) matchesBudget = fee.amountMinorUnits <= maxBudgetMinorUnits;
+    }
+    if (!matchesBudget) continue;
+
+    const building = await Building.findById(room.buildingId);
+
+    candidates.push({
+      roomId: room._id,
+      buildingId: room.buildingId,
+      roomNumber: room.roomNumber,
+      category: room.category,
+      capacity: room.capacity,
+      amenities: room.amenities,
+      availableBeds,
+      buildingName: building?.name ?? 'Unknown',
+    });
+  }
+
+  if (candidates.length === 0) {
+    return { candidates: [], explanation: 'No available rooms currently match these constraints.' };
+  }
+
+  let explanation = null;
+  const provider = getAIProvider();
+
+  if (provider) {
+    const instruction = `You help hostel staff choose between available rooms for a new resident. You are given a JSON list of real, currently-available candidate rooms and the staff member's stated preferences. Recommend the best 1-3 options and briefly explain why, referencing room numbers from the list. Do not invent rooms, amenities, or numbers not present in the list. Never factor in or mention any protected personal attribute (race, religion, gender, disability, etc.) — base recommendations only on room/operational fit. Keep the response under 120 words.`;
+
+    const prompt = `Preferences: ${JSON.stringify({ category, maxBudgetMinorUnits, minCapacity, facilities })}\n\nAvailable candidates: ${JSON.stringify(candidates)}`;
+
+    try {
+      const response = await provider.complete({
+        messages: [{ role: 'user', parts: [{ text: prompt }] }],
+        systemInstruction: instruction,
+      });
+      explanation = response.text;
+    } catch {
+      explanation = null;
+    }
+  }
+
+  recordAuditLog({
+    hostelId: resolvedHostelId,
+    actorId: user.id,
+    action: 'ai.room_suggestion',
+    entityType: 'Room',
+    entityId: null,
+    metadata: { category, maxBudgetMinorUnits, minCapacity, candidateCount: candidates.length },
+  });
+
+  return { candidates, explanation };
 }
