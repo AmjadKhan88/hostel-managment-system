@@ -94,11 +94,17 @@ export default function SettingsPage() {
 
   const handleLogoUpload = async () => {
     if (!logoFile) return;
+
     const formData = new FormData();
     formData.append('file', logoFile);
-    await uploadLogo.mutateAsync(formData);
-    setLogoFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    try {
+      await uploadLogo.mutateAsync(formData);
+      setLogoFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (error) {
+      console.log(error)
+    }
   };
 
   if (isLoading) return <p className="text-sm text-ink-muted">Loading settings…</p>;
@@ -136,6 +142,9 @@ export default function SettingsPage() {
             >
               <Upload size={13} /> {uploadLogo.isPending ? 'Uploading…' : 'Upload logo'}
             </button>
+            {uploadLogo.isError && (
+              <p className="mt-2 text-sm text-danger">{uploadLogo.error.message}</p>
+            )}
           </div>
         </div>
         <p className="mt-2 text-xs text-ink-subtle">JPEG or PNG.</p>
