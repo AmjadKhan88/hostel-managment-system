@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { Bed } from '../models/Bed.model.js';
 import { Room } from '../models/Room.model.js';
 import { Resident } from '../models/Resident.model.js';
+import { Invoice } from '../models/Invoice.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 
@@ -11,14 +12,15 @@ export async function getDashboardSummary(user, requestedHostelId) {
 
   const hostelObjectId = new mongoose.Types.ObjectId(hostelId);
 
-  const [occupancy, rooms, residents, admissionsTrend] = await Promise.all([
+  const [occupancy, rooms, residents, admissionsTrend, fees] = await Promise.all([
     getBedCounts(hostelObjectId),
     getRoomCounts(hostelObjectId),
     getResidentCounts(hostelObjectId),
     getAdmissionsTrend(hostelObjectId),
+    getFeeSummary(hostelObjectId),
   ]);
 
-  return { occupancy, rooms, residents, admissionsTrend };
+  return { occupancy, rooms, residents, admissionsTrend, fees };
 }
 
 async function countByStatus(Model, hostelObjectId) {
@@ -89,4 +91,45 @@ async function getAdmissionsTrend(hostelObjectId) {
     trend.push({ date: key, count: byDate[key] ?? 0 });
   }
   return trend;
+}
+
+async function getFeeSummary(hostelObjectId) {
+  const totalsAgg = await Invoice.aggregate([
+    { $match: { hostelId: hostelObjectId, status: { $ne: 'void' } } },
+    {
+      $group: {
+        _id: null,
+        totalBilledMinorUnits: { $sum: '$totalMinorUnits' },
+        totalPaidMinorUnits: { $sum: '$paidMinorUnits' },
+      },
+    },
+  ]);
+
+  const residentsWithOutstanding = await Invoice.distinct('residentId', {
+    hostelId: hostelObjectId,
+    status: { $in: ['issued', 'partially_paid'] },
+  });
+
+  const residentsWithAnyPaidInvoice = await Invoice.distinct('residentId', {
+    hostelId: hostelObjectId,
+    status: 'paid',
+  });
+
+  // "Paid up" = has at least one fully-paid invoice AND no currently
+  // outstanding one — not just "has ever paid anything."
+  const outstandingSet = new Set(residentsWithOutstanding.map((id) => id.toString()));
+  const paidUpCount = residentsWithAnyPaidInvoice.filter(
+    (id) => !outstandingSet.has(id.toString())
+  ).length;
+
+  const totalBilled = totalsAgg[0]?.totalBilledMinorUnits ?? 0;
+  const totalPaid = totalsAgg[0]?.totalPaidMinorUnits ?? 0;
+
+  return {
+    totalBilledMinorUnits: totalBilled,
+    totalCollectedMinorUnits: totalPaid,
+    totalPendingMinorUnits: totalBilled - totalPaid,
+    residentsWithOutstandingFees: residentsWithOutstanding.length,
+    residentsPaidUp: paidUpCount,
+  };
 }

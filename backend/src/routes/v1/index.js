@@ -24,6 +24,7 @@ import searchRoutes from './search.routes.js';
 import auditRoutes from './audit.routes.js';
 import automationRoutes from './automation.routes.js';
 import aiAssistantRoutes from './aiAssistant.routes.js';
+import expenseRoutes from './expense.routes.js';
 
 const router = Router();
 
@@ -65,6 +66,7 @@ router.use('/search', searchRoutes);
 router.use('/audit-logs', auditRoutes);
 router.use('/automation', automationRoutes);
 router.use('/ai-assistant', aiAssistantRoutes);
+router.use('/expenses', expenseRoutes);
 
 // Further module routers (settings, ...) are mounted here as each is
 // implemented on its own scoped day.

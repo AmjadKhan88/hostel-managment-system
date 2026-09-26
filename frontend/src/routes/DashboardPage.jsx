@@ -1,8 +1,9 @@
-import { BedDouble, DoorOpen, Home, Users } from 'lucide-react';
+import { BedDouble, DoorOpen, Home, Users, Wallet, AlertCircle, CheckCircle2 } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import StatCard from '@/components/ui/StatCard.jsx';
 import { useAuthStore } from '@/store/authStore';
 import { useHostelStore } from '@/store/hostelStore';
+import { formatMoney } from '@/lib/money';
 import { useDashboardSummary } from '@/features/dashboard/hooks/useDashboardSummary';
 import AdmissionsTrendChart from '@/features/dashboard/components/AdmissionsTrendChart.jsx';
 
@@ -31,13 +32,13 @@ export default function DashboardPage() {
     );
   }
 
-  const { occupancy, rooms, residents, admissionsTrend } = data.data;
+  const { occupancy, rooms, residents, admissionsTrend, fees } = data.data;
 
   return (
     <div className="mx-auto max-w-6xl">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold text-ink">Dashboard</h1>
-        <p className="mt-1 text-sm text-ink-muted">Live occupancy and resident overview for this hostel.</p>
+        <p className="mt-1 text-sm text-ink-muted">Live occupancy, resident, and fee overview for this hostel.</p>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -60,10 +61,32 @@ export default function DashboardPage() {
           hint={`${rooms.available} available · ${rooms.occupied} occupied`}
         />
         <StatCard
-          label="Active Residents"
-          value={residents.active}
+          label="Total Residents"
+          value={residents.total}
           icon={Users}
-          hint={`${residents.pending} pending · ${residents.checkedOut} checked out`}
+          hint={`${residents.active} active · ${residents.pending} pending · ${residents.checkedOut} checked out`}
+        />
+      </div>
+
+      <h2 className="mb-3 mt-6 text-sm font-semibold text-ink">Fees</h2>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard
+          label="Fees Collected"
+          value={formatMoney(fees.totalCollectedMinorUnits)}
+          icon={Wallet}
+          hint={`of ${formatMoney(fees.totalBilledMinorUnits)} billed`}
+        />
+        <StatCard
+          label="Fees Pending"
+          value={formatMoney(fees.totalPendingMinorUnits)}
+          icon={AlertCircle}
+          hint={`${fees.residentsWithOutstandingFees} resident(s) owe money`}
+        />
+        <StatCard
+          label="Residents Paid Up"
+          value={fees.residentsPaidUp}
+          icon={CheckCircle2}
+          hint={`of ${residents.total} total residents`}
         />
       </div>
 

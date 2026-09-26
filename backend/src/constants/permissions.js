@@ -33,6 +33,8 @@ export const PERMISSIONS = Object.freeze({
   SETTINGS_MANAGE: 'settings.manage',
 
   ROLES_MANAGE: 'roles.manage',
+  EXPENSES_READ: 'expenses.read',
+  EXPENSES_MANAGE: 'expenses.manage',
 });
 
 export const ALL_PERMISSIONS = Object.values(PERMISSIONS);
