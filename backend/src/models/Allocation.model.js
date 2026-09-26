@@ -6,9 +6,9 @@ export const ALLOCATION_END_REASONS = ['transfer', 'checkout'];
 const allocationSchema = new mongoose.Schema(
   {
     hostelId: { type: mongoose.Schema.Types.ObjectId, ref: 'Hostel', required: true, index: true },
-    residentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Resident', required: true, index: true },
+    residentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Resident', required: true },
     roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true },
-    bedId: { type: mongoose.Schema.Types.ObjectId, ref: 'Bed', required: true, index: true },
+    bedId: { type: mongoose.Schema.Types.ObjectId, ref: 'Bed', required: true },
 
     status: { type: String, enum: ALLOCATION_STATUSES, default: 'active' },
     allocatedAt: { type: Date, default: Date.now },
