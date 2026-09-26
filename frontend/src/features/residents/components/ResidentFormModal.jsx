@@ -68,6 +68,8 @@ export default function ResidentFormModal({ open, onClose, hostelId, resident })
     } else {
       await mutation.mutateAsync({ ...payload, hostelId, registrationNumber: values.registrationNumber });
     }
+
+    reset(toFormValues(isEdit ? resident : null));
     onClose();
   };
 
