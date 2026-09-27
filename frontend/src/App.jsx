@@ -25,6 +25,7 @@ import ToastContainer from '@/components/ui/ToastContainer.jsx';
 import SettingsPage from '@/routes/SettingsPage.jsx';
 import AuditLogPage from '@/routes/AuditLogPage.jsx';
 import AIAssistantPage from '@/routes/AIAssistantPage.jsx';
+import FinancePage from '@/routes/FinancePage.jsx';
 
 export default function App() {
   useSessionHydration();
@@ -54,6 +55,7 @@ export default function App() {
             <Route path="/fees/invoices/:invoiceId" element={<InvoiceDetailPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/ai-assistant" element={<AIAssistantPage />} />
+            <Route path="/finance" element={<FinancePage />} />
             <Route path="/audit-log" element={<AuditLogPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>

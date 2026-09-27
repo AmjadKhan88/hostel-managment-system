@@ -13,6 +13,7 @@ import {
   History,
   Settings,
   Sparkles,
+  TrendingUp,
 } from 'lucide-react';
 
 /**
@@ -44,7 +45,10 @@ export const navSections = [
   },
   {
     title: 'Finances',
-    items: [{ label: 'Fees & Payments', icon: Wallet, path: '/fees', permission: 'payments.read' }],
+    items: [
+      { label: 'Fees & Payments', icon: Wallet, path: '/fees', permission: 'payments.read' },
+      { label: 'Finances', icon: TrendingUp, path: '/finance', permission: 'payments.read' },
+    ],
   },
   {
     title: 'Organization',
