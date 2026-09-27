@@ -2,7 +2,7 @@ import * as dashboardService from '../services/dashboard.service.js';
 import * as invoiceService from '../services/invoice.service.js';
 import * as residentService from '../services/resident.service.js';
 import * as reportsService from '../services/reports.service.js';
-
+import * as financeService from '../services/finance.service.js';
 /**
  * The fixed, allow-listed set of data-access functions the AI Admin
  * Assistant may call — the "controlled tool/function layer." The AI can
@@ -75,5 +75,17 @@ export const AI_TOOLS = {
       to: { type: 'string', description: 'End date, format YYYY-MM-DD' },
     },
     execute: async (user, hostelId, args) => reportsService.maintenanceReport(user, hostelId, args),
+  },
+  get_financial_overview: {
+    description:
+      "Get total income (all time), this month's income, this month's expenses broken down by category (electricity, water, internet, salary, maintenance_supplies, technical, rent, other), and net profit/loss for the current or a specified month. Use this for any question about profit, loss, revenue, or where money is being spent.",
+    parameters: {
+      month: {
+        type: 'string',
+        description: 'Month to analyze, format YYYY-MM. Defaults to the current month.',
+      },
+    },
+    execute: async (user, hostelId, args) =>
+      financeService.getFinancialOverview(user, hostelId, { month: args.month }),
   },
 };

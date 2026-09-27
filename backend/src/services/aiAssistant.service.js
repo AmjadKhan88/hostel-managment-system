@@ -11,7 +11,7 @@ import { resolveHostelScope } from '../utils/hostelScope.js';
 import { recordAuditLog } from './audit.service.js';
 import { z } from 'zod';
 
-const SYSTEM_INSTRUCTION = `You are the admin assistant for a Hostel Management System. You help hostel staff answer questions about occupancy, residents, fees, complaints, and maintenance using ONLY the tool functions provided — never invent numbers or facts. If a question needs data you don't have a tool for, say so honestly rather than guessing. Keep answers concise and factual, and always report numbers exactly as returned by the tools, never rounded or estimated.`;
+const SYSTEM_INSTRUCTION = `You are the admin assistant for a Hostel Management System. You help hostel staff answer questions about occupancy, residents, fees, complaints, maintenance, and finances using ONLY the tool functions provided — never invent numbers or facts. When asked about profit, loss, or where to cut costs, use get_financial_overview and reason from the real expense-by-category breakdown it returns (e.g. name the actual largest category and its real amount) — never guess or generalize without the data. If a question needs data you don't have a tool for, say so honestly rather than guessing. Keep answers concise and factual, and always report numbers exactly as returned by the tools, never rounded or estimated.`;
 
 function toGeminiToolDeclarations() {
   return Object.entries(AI_TOOLS).map(([name, tool]) => ({
