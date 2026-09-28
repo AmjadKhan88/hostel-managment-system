@@ -14,7 +14,12 @@ const invoiceItemSchema = new mongoose.Schema(
 const invoiceSchema = new mongoose.Schema(
   {
     hostelId: { type: mongoose.Schema.Types.ObjectId, ref: 'Hostel', required: true, index: true },
-    residentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Resident', required: true, index: true },
+    residentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Resident',
+      required: true,
+      index: true,
+    },
 
     invoiceNumber: { type: String, required: true, trim: true },
     items: {
@@ -42,6 +47,10 @@ const invoiceSchema = new mongoose.Schema(
     // guarantee — not just application logic — that a retried or re-run
     // job can never create the same month's charge twice.
     idempotencyKey: { type: String, default: null },
+    // Tracks payment-reminder delivery so the reminder job never spams a
+    // resident — capped and spaced out in paymentReminderProcessor.js.
+    reminderCount: { type: Number, default: 0 },
+    lastReminderAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

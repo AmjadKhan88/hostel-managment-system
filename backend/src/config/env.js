@@ -34,6 +34,19 @@ const envSchema = z.object({
 
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(300),
+
+  // Email (optional — reminders silently skip sending if unset)
+  SMTP_HOST: z.string().optional().default(''),
+  SMTP_PORT: z.coerce.number().int().positive().optional().default(587),
+  SMTP_USER: z.string().optional().default(''),
+  SMTP_PASSWORD: z.string().optional().default(''),
+  SMTP_FROM_EMAIL: z.string().optional().default('no-reply@example.com'),
+  SMTP_FROM_NAME: z.string().optional().default('Hostel Management System'),
+
+  // WhatsApp via Twilio (optional — reminders silently skip sending if unset)
+  TWILIO_ACCOUNT_SID: z.string().optional().default(''),
+  TWILIO_AUTH_TOKEN: z.string().optional().default(''),
+  TWILIO_WHATSAPP_FROM: z.string().optional().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);
