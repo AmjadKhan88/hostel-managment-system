@@ -36,6 +36,11 @@ export default function InvoiceDetailPage() {
   const balance = invoice.totalMinorUnits - invoice.paidMinorUnits;
   const canRecordPayment = invoice.status !== 'void' && balance > 0;
   const canVoid = invoice.status === 'issued' && invoice.paidMinorUnits === 0;
+  const canSendReminder = invoice.status !== 'void' && balance > 0;
+  const resident = invoice.residentId;
+  const whatsappPhone = (resident?.phone ?? '').replace(/\D/g, '').replace(/^00/, '');
+  const reminderMessage = `Hi ${resident?.name ?? ''}, this is a payment reminder for invoice ${invoice.invoiceNumber}. The outstanding balance is ${formatMoney(balance)}. Please arrange payment at your earliest convenience.`;
+  const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(reminderMessage)}`;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -85,6 +90,16 @@ export default function InvoiceDetailPage() {
             >
               Record Payment
             </button>
+          )}
+          {canSendReminder && (
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-control border border-emerald-200 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+            >
+              Send WhatsApp reminder
+            </a>
           )}
           {canVoid && (
             <button

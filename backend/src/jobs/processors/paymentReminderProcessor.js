@@ -307,7 +307,8 @@ async function processInvoice({ invoice, deliveries, now, summary }) {
 }
 
 /**
- * Real email + WhatsApp reminders for overdue invoices.
+ * Email reminders for overdue invoices. WhatsApp is deliberately manual;
+ * staff can open a prepared wa.me message from the invoice page.
  *
  * Safe to retry or run twice: every send is claimed first through a unique
  * (invoice, round, channel) record, so at most one message is ever sent per

@@ -44,3 +44,23 @@ npm start           # start (production)
 npm run lint         # ESLint
 npm run test          # Vitest
 ```
+
+## Email and WhatsApp reminders
+
+For real email delivery through Gmail, configure `SMTP_HOST=smtp.gmail.com`,
+`SMTP_PORT=587`, and set both `SMTP_USER` and `SMTP_FROM_EMAIL` to the sending
+Gmail address. With Google 2-Step Verification enabled, create an App Password
+for this application and put that value in `SMTP_PASSWORD`; the Google account
+password and 2FA code are not used by the server. App Passwords may be unavailable
+for some managed accounts or security configurations.
+
+WhatsApp reminders are manual. On an invoice with an outstanding balance, use
+**Send WhatsApp reminder** to open WhatsApp with the resident number and a
+prefilled message; staff still reviews and presses Send. Store the resident
+phone number in international format including country code (for example,
+`923001234567`). The background reminder job does not send WhatsApp messages.
+Meta's official WhatsApp Business Platform is the supported route for automation,
+but it requires a business setup and is priced by message category/recipient
+market; a free API key is not generally available for automated production
+reminders. Avoid unofficial WhatsApp Web automation because it can put the
+account at risk.

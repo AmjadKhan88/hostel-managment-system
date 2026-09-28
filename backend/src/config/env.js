@@ -43,10 +43,6 @@ const envSchema = z.object({
   SMTP_FROM_EMAIL: z.string().optional().default('no-reply@example.com'),
   SMTP_FROM_NAME: z.string().optional().default('Hostel Management System'),
 
-  // WhatsApp via Twilio (optional — reminders silently skip sending if unset)
-  TWILIO_ACCOUNT_SID: z.string().optional().default(''),
-  TWILIO_AUTH_TOKEN: z.string().optional().default(''),
-  TWILIO_WHATSAPP_FROM: z.string().optional().default(''),
 });
 
 const parsed = envSchema.safeParse(process.env);
