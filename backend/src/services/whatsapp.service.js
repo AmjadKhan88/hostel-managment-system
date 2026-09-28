@@ -4,9 +4,13 @@ import { logger } from '../config/logger.js';
 
 let client = null;
 
+export function isWhatsAppConfigured() {
+  return Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_WHATSAPP_FROM);
+}
+
 function getClient() {
   if (client) return client;
-  if (!env.TWILIO_ACCOUNT_SID || !env.TWILIO_AUTH_TOKEN) return null;
+  if (!isWhatsAppConfigured()) return null;
 
   client = twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN);
   return client;
@@ -19,14 +23,13 @@ function toWhatsAppAddress(phone) {
 }
 
 /**
- * Sends a WhatsApp message via Twilio if configured; otherwise logs and
- * returns { sent: false } without throwing — same non-breaking contract
- * as sendEmail.
+ * Sends a WhatsApp message via Twilio if configured; otherwise returns
+ * { sent: false } without throwing — same non-breaking contract as sendEmail.
  */
 export async function sendWhatsApp({ to, body }) {
   const c = getClient();
   if (!c) {
-    logger.warn('WhatsApp not configured (TWILIO_ACCOUNT_SID missing) — skipping send');
+    logger.warn('WhatsApp not configured (Twilio credentials or sender missing) — skipping send');
     return { sent: false, reason: 'not_configured' };
   }
 
@@ -39,7 +42,7 @@ export async function sendWhatsApp({ to, body }) {
     await c.messages.create({ from: env.TWILIO_WHATSAPP_FROM, to: toAddress, body });
     return { sent: true };
   } catch (err) {
-    logger.error({ err, to }, 'Failed to send WhatsApp message');
-    return { sent: false, reason: 'send_failed' };
+    logger.error({ err }, 'Failed to send WhatsApp message');
+    return { sent: false, reason: 'send_failed', error: err.message };
   }
 }

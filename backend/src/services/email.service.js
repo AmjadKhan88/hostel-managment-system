@@ -4,9 +4,13 @@ import { logger } from '../config/logger.js';
 
 let transporter = null;
 
+export function isEmailConfigured() {
+  return Boolean(env.SMTP_HOST);
+}
+
 function getTransporter() {
   if (transporter) return transporter;
-  if (!env.SMTP_HOST) return null;
+  if (!isEmailConfigured()) return null;
 
   transporter = nodemailer.createTransport({
     host: env.SMTP_HOST,
@@ -18,9 +22,8 @@ function getTransporter() {
 }
 
 /**
- * Sends an email if SMTP is configured; otherwise logs and returns
- * { sent: false } without throwing — a missing email provider should
- * never break the automation job that's calling this.
+ * Sends an email if SMTP is configured; otherwise returns { sent: false }
+ * without throwing — a missing provider must never break the calling job.
  */
 export async function sendEmail({ to, subject, text, html }) {
   const t = getTransporter();
@@ -42,7 +45,7 @@ export async function sendEmail({ to, subject, text, html }) {
     });
     return { sent: true };
   } catch (err) {
-    logger.error({ err, to }, 'Failed to send email');
-    return { sent: false, reason: 'send_failed' };
+    logger.error({ err }, 'Failed to send email');
+    return { sent: false, reason: 'send_failed', error: err.message };
   }
 }

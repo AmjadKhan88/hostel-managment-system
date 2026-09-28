@@ -4,6 +4,30 @@ import { useAuthStore } from '@/store/authStore';
 import { useNotificationsStore } from '@/store/notificationsStore';
 import { useToastStore } from '@/store/toastStore';
 
+function describeReminder(reminder) {
+  if (!reminder) return '';
+  const channels = reminder.channels
+    ? Object.entries(reminder.channels)
+        .map(([name, r]) => `${name}: ${r.status}${r.detail ? ` (${r.detail})` : ''}`)
+        .join(', ')
+    : '';
+
+  switch (reminder.state) {
+    case 'sent':
+      return ` — reminder ${reminder.round}/${reminder.maxRounds} sent (${channels})`;
+    case 'not_delivered':
+      return ` — reminder NOT delivered (${channels})`;
+    case 'waiting_interval':
+      return ` — ${reminder.roundsCompleted}/${reminder.maxRounds} reminders sent, next one due soon`;
+    case 'max_reminders_reached':
+      return ' — all reminders sent, follow up manually';
+    case 'no_resident':
+      return ' — resident record missing';
+    default:
+      return '';
+  }
+}
+
 const EVENT_MESSAGES = {
   'payment:recorded': (p) =>
     `Payment of ${(p.amountMinorUnits / 100).toFixed(2)} recorded (${p.receiptNumber})`,
@@ -13,7 +37,8 @@ const EVENT_MESSAGES = {
   'visitor:arrived': (p) => `${p.visitorName} checked in to see ${p.residentName}`,
   'allocation:changed': (p) => `Room allocation ${p.type.replace('_', ' ')}`,
   'invoice:generated': (p) => `Invoice ${p.invoiceNumber} generated automatically`,
-  'payment:overdue': (p) => `${p.invoiceNumber} is ${p.daysOverdue}d overdue (${p.residentName})`,
+  'payment:overdue': (p) =>
+    `${p.invoiceNumber} is ${p.daysOverdue}d overdue (${p.residentName})${describeReminder(p.reminder)}`,
 };
 
 /**

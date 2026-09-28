@@ -51,6 +51,8 @@ const invoiceSchema = new mongoose.Schema(
     // resident — capped and spaced out in paymentReminderProcessor.js.
     reminderCount: { type: Number, default: 0 },
     lastReminderAt: { type: Date, default: null },
+    // Throttles the staff "overdue" notification to the reminder interval.
+    lastStaffOverdueNotifiedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
