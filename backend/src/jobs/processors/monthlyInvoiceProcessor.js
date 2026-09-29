@@ -6,37 +6,52 @@ import { getNextSequence } from '../../models/Counter.model.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { emitToHostel } from '../../events/socketEvents.js';
 import { logger } from '../../config/logger.js';
+import { isValidTimeZone, getLocalMonthKey } from '../../utils/timezone.js';
 
 /**
- * Generates this month's rent invoice for every active resident, one per
- * (resident, monthly fee structure, month). The idempotencyKey is what
- * guarantees a retried or re-run job never creates a duplicate charge —
- * the Invoice model's unique index rejects the second attempt outright.
+ * Generates this month's rent invoice for every active resident of ONE
+ * hostel. Scoped by hostelId because each hostel's scheduler now fires in
+ * that hostel's own local time (jobs/queues.js), and "this month" must be
+ * evaluated in that SAME local time — otherwise a hostel a few hours behind
+ * UTC could get billed for next month a few hours early, or one ahead of
+ * UTC could miss a day, right around midnight on the 1st.
  */
-export async function generateMonthlyInvoices() {
-  const now = new Date();
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+export async function generateMonthlyInvoices({ hostelId } = {}) {
+  if (!hostelId) throw new Error('generateMonthlyInvoices requires a hostelId');
 
-  const hostels = await Hostel.find({ isActive: true });
+  const hostel = await Hostel.findById(hostelId);
+  if (!hostel || !hostel.isActive) {
+    logger.warn({ hostelId }, 'generateMonthlyInvoices: hostel not found or inactive, skipping');
+    return { created: 0, skipped: 0 };
+  }
+
+  const timezone = isValidTimeZone(hostel.timezone) ? hostel.timezone : 'UTC';
+  if (timezone !== hostel.timezone) {
+    logger.warn(
+      { hostelId, timezone: hostel.timezone },
+      'Invalid hostel timezone, falling back to UTC'
+    );
+  }
+
+  const now = new Date();
+  const monthKey = getLocalMonthKey(timezone, now); // e.g. "2026-09" in the hostel's own time
+
   let created = 0;
   let skipped = 0;
 
-  for (const hostel of hostels) {
-    const feeStructures = await FeeStructure.find({
-      hostelId: hostel._id,
-      billingCycle: 'monthly',
-      isActive: true,
-    });
-    if (feeStructures.length === 0) continue;
+  const feeStructures = await FeeStructure.find({
+    hostelId: hostel._id,
+    billingCycle: 'monthly',
+    isActive: true,
+  });
 
+  if (feeStructures.length > 0) {
     const residents = await Resident.find({ hostelId: hostel._id, status: 'active' });
 
     for (const resident of residents) {
       for (const fee of feeStructures) {
-        // Room-category-specific fee structures are skipped for now —
-        // Resident doesn't denormalize its current room's category, so
-        // only hostel-wide ("applies to all") fee structures are safely
-        // matchable here. Category-aware matching is a natural follow-up.
+        // Room-category-specific fee structures are skipped for now — see
+        // the Day 22-era note; unrelated to this timezone fix.
         if (fee.roomCategory) continue;
 
         const idempotencyKey = `monthly:${resident._id}:${fee._id}:${monthKey}`;
@@ -48,7 +63,10 @@ export async function generateMonthlyInvoices() {
 
         const seq = await getNextSequence(`invoice:${hostel._id}`);
         const prefix = hostel.invoicePrefix || 'INV';
-        const invoiceNumber = `${prefix}-${now.getFullYear()}-${String(seq).padStart(6, '0')}`;
+        // Year comes from the hostel-local monthKey, not now.getFullYear()
+        // (which reflects the server process's own timezone) — matters for
+        // the same midnight-boundary reason as the month itself.
+        const invoiceNumber = `${prefix}-${monthKey.split('-')[0]}-${String(seq).padStart(6, '0')}`;
 
         const dueDate = new Date(now);
         dueDate.setDate(dueDate.getDate() + (hostel.defaultDueDays ?? 7));
@@ -60,7 +78,11 @@ export async function generateMonthlyInvoices() {
             invoiceNumber,
             idempotencyKey,
             items: [
-              { description: `${fee.name} — ${monthKey}`, feeType: fee.feeType, amountMinorUnits: fee.amountMinorUnits },
+              {
+                description: `${fee.name} — ${monthKey}`,
+                feeType: fee.feeType,
+                amountMinorUnits: fee.amountMinorUnits,
+              },
             ],
             totalMinorUnits: fee.amountMinorUnits,
             dueDate,
@@ -75,7 +97,13 @@ export async function generateMonthlyInvoices() {
             action: 'invoice.generated',
             entityType: 'Invoice',
             entityId: invoice._id,
-            metadata: { invoiceNumber, totalMinorUnits: invoice.totalMinorUnits, automated: true },
+            metadata: {
+              invoiceNumber,
+              totalMinorUnits: invoice.totalMinorUnits,
+              automated: true,
+              monthKey,
+              timezone,
+            },
           });
 
           emitToHostel(hostel._id.toString(), 'invoice:generated', {
@@ -85,8 +113,6 @@ export async function generateMonthlyInvoices() {
           });
         } catch (err) {
           if (err?.code === 11000) {
-            // Race with another run hitting the same idempotency key —
-            // exactly the duplicate-charge scenario the key prevents.
             skipped += 1;
             continue;
           }
@@ -96,6 +122,9 @@ export async function generateMonthlyInvoices() {
     }
   }
 
-  logger.info({ created, skipped, monthKey }, 'Monthly invoice generation run complete');
+  logger.info(
+    { hostelId, created, skipped, monthKey, timezone },
+    'Monthly invoice generation run complete'
+  );
   return { created, skipped };
 }

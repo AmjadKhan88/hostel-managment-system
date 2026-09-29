@@ -1,8 +1,10 @@
+import { Hostel } from '../../models/Hostel.model.js';
 import { Invoice } from '../../models/Invoice.model.js';
 import { ReminderDelivery } from '../../models/ReminderDelivery.model.js';
 import { emitToHostel } from '../../events/socketEvents.js';
 import { sendEmail, isEmailConfigured } from '../../services/email.service.js';
 import { sendWhatsApp, isWhatsAppConfigured } from '../../services/whatsapp.service.js';
+import { isValidTimeZone, calendarDaysBetweenInTz } from '../../utils/timezone.js';
 import { logger } from '../../config/logger.js';
 
 const MAX_REMINDER_ROUNDS = 3;
@@ -10,17 +12,6 @@ const REMINDER_INTERVAL_DAYS = 3;
 const MAX_ATTEMPTS_PER_CHANNEL = 3;
 const STALE_PENDING_MS = 15 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-function startOfUtcDay(date) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-}
-
-// Calendar-day comparison, NOT elapsed milliseconds: comparing elapsed time
-// let a 3-day interval slip to 4 days whenever a run started a few ms
-// earlier than the previous one.
-function calendarDaysBetween(earlier, later) {
-  return Math.round((startOfUtcDay(later) - startOfUtcDay(earlier)) / DAY_MS);
-}
 
 /**
  * A round is "consumed" when at least one channel was confirmed sent, or is
@@ -42,12 +33,14 @@ export function summarizeRounds(deliveries) {
   return { highestConsumedRound, nextRound: highestConsumedRound + 1, lastConsumedAt };
 }
 
-function checkResidentReminderDue(rounds, now) {
+// timezone-aware: compares CALENDAR days in the hostel's own local time,
+// not elapsed milliseconds or UTC calendar days.
+function checkResidentReminderDue(rounds, now, timezone) {
   if (rounds.nextRound > MAX_REMINDER_ROUNDS)
     return { due: false, reason: 'max_reminders_reached' };
   if (
     rounds.lastConsumedAt &&
-    calendarDaysBetween(rounds.lastConsumedAt, now) < REMINDER_INTERVAL_DAYS
+    calendarDaysBetweenInTz(rounds.lastConsumedAt, now, timezone) < REMINDER_INTERVAL_DAYS
   ) {
     return { due: false, reason: 'waiting_interval' };
   }
@@ -57,6 +50,7 @@ function checkResidentReminderDue(rounds, now) {
 function newRunSummary() {
   const channel = () => ({ sent: 0, failed: 0, skipped: 0, alreadyHandled: 0 });
   return {
+    hostelsProcessed: 0,
     overdueInvoices: 0,
     invoicesAttempted: 0,
     invoicesWithNoDelivery: 0,
@@ -125,7 +119,6 @@ async function claimDelivery({ invoice, resident, round, channel, now }) {
 }
 
 async function deliverOnChannel({ invoice, resident, round, now, plan }) {
-  // Not attempts, so they are never recorded as one and never consume a round.
   if (!plan.configured) return { status: 'skipped', detail: 'not_configured' };
   if (!plan.recipient) return { status: 'skipped', detail: 'no_recipient' };
 
@@ -145,8 +138,6 @@ async function deliverOnChannel({ invoice, resident, round, now, plan }) {
   }
 
   if (outcome.sent) {
-    // If THIS write fails, the record stays `pending` — a retry can't
-    // re-claim it, which is exactly what prevents the duplicate.
     await ReminderDelivery.updateOne(
       { _id: claim._id },
       { $set: { status: 'sent', sentAt: new Date(), detail: '' } }
@@ -198,9 +189,6 @@ async function attemptResidentReminder({ invoice, resident, round, daysOverdue, 
   return Object.fromEntries(entries);
 }
 
-// Idempotent: writes computed values (never $inc), so a lost update heals
-// itself on the next run. Deliberately not invoice.save() — that could
-// overwrite the throttle field below with a stale copy.
 async function syncReminderSummary(invoice, rounds, sentNow) {
   const highest = sentNow ? sentNow.round : rounds.highestConsumedRound;
   const lastAt = sentNow ? sentNow.at : rounds.lastConsumedAt;
@@ -216,21 +204,32 @@ async function syncReminderSummary(invoice, rounds, sentNow) {
 }
 
 /**
- * Staff are notified at most once per reminder interval per invoice. The
- * claim is one atomic conditional update, so a retried job can't emit twice.
+ * Staff notified at most once per reminder interval per invoice, using
+ * compare-and-swap on the exact `lastStaffOverdueNotifiedAt` value just
+ * read — race-safe without a separate query, and timezone-aware via
+ * calendarDaysBetweenInTz.
  */
-async function notifyStaffIfDue({ invoice, resident, daysOverdue, now, reminder, summary }) {
-  // Due when >= INTERVAL calendar days since the last notification.
-  const threshold = new Date(startOfUtcDay(now).getTime() - (REMINDER_INTERVAL_DAYS - 1) * DAY_MS);
+async function notifyStaffIfDue({
+  invoice,
+  resident,
+  daysOverdue,
+  now,
+  reminder,
+  summary,
+  timezone,
+}) {
+  const previousValue = invoice.lastStaffOverdueNotifiedAt;
+  const due =
+    !previousValue ||
+    calendarDaysBetweenInTz(previousValue, now, timezone) >= REMINDER_INTERVAL_DAYS;
+
+  if (!due) {
+    summary.staffThrottled += 1;
+    return;
+  }
 
   const claimed = await Invoice.findOneAndUpdate(
-    {
-      _id: invoice._id,
-      $or: [
-        { lastStaffOverdueNotifiedAt: null },
-        { lastStaffOverdueNotifiedAt: { $lt: threshold } },
-      ],
-    },
+    { _id: invoice._id, lastStaffOverdueNotifiedAt: previousValue ?? null },
     { $set: { lastStaffOverdueNotifiedAt: now } },
     { new: false, projection: { _id: 1 } }
   );
@@ -251,7 +250,7 @@ async function notifyStaffIfDue({ invoice, resident, daysOverdue, now, reminder,
   summary.staffNotified += 1;
 }
 
-async function processInvoice({ invoice, deliveries, now, summary }) {
+async function processInvoice({ invoice, deliveries, now, summary, timezone }) {
   const resident = invoice.residentId;
   const daysOverdue = Math.floor((now - invoice.dueDate) / DAY_MS);
   const rounds = summarizeRounds(deliveries);
@@ -264,7 +263,7 @@ async function processInvoice({ invoice, deliveries, now, summary }) {
   if (!resident) {
     state = 'no_resident';
   } else {
-    const dueCheck = checkResidentReminderDue(rounds, now);
+    const dueCheck = checkResidentReminderDue(rounds, now, timezone);
     if (!dueCheck.due) {
       state = dueCheck.reason;
     } else {
@@ -296,8 +295,9 @@ async function processInvoice({ invoice, deliveries, now, summary }) {
     daysOverdue,
     now,
     summary,
+    timezone,
     reminder: {
-      state, // sent | not_delivered | waiting_interval | max_reminders_reached | no_resident
+      state,
       round: attemptedRound,
       roundsCompleted: sentThisRun ? attemptedRound : rounds.highestConsumedRound,
       maxRounds: MAX_REMINDER_ROUNDS,
@@ -307,49 +307,70 @@ async function processInvoice({ invoice, deliveries, now, summary }) {
 }
 
 /**
- * Email reminders for overdue invoices. WhatsApp is deliberately manual;
- * staff can open a prepared wa.me message from the invoice page.
+ * Real email + WhatsApp reminders for overdue invoices, scoped to one
+ * hostel (its own scheduler fires in its own local time — see
+ * jobs/queues.js) or, when `hostelId` is omitted, every active hostel
+ * (used by the manual "trigger all" endpoint and tests).
  *
  * Safe to retry or run twice: every send is claimed first through a unique
- * (invoice, round, channel) record, so at most one message is ever sent per
- * channel per round. If any invoice errors, the run still processes the
- * rest, then throws so BullMQ records the failure and retries.
+ * (invoice, round, channel) record. If any invoice errors, the run still
+ * processes the rest, then throws so BullMQ records the failure and retries.
  */
-export async function sendPaymentReminders() {
+export async function sendPaymentReminders({ hostelId } = {}) {
   const now = new Date();
   const summary = newRunSummary();
 
   summary.staleMarkedUnknown = await markStalePendingAsUnknown(now);
 
-  const overdueInvoices = await Invoice.find({
-    status: { $in: ['issued', 'partially_paid'] },
-    dueDate: { $lt: now },
-  }).populate('residentId', 'name email phone');
-  summary.overdueInvoices = overdueInvoices.length;
-
-  const allDeliveries = await ReminderDelivery.find({
-    invoiceId: { $in: overdueInvoices.map((i) => i._id) },
-  });
-  const deliveriesByInvoice = new Map();
-  for (const d of allDeliveries) {
-    const key = d.invoiceId.toString();
-    if (!deliveriesByInvoice.has(key)) deliveriesByInvoice.set(key, []);
-    deliveriesByInvoice.get(key).push(d);
+  const hostels = await Hostel.find(hostelId ? { _id: hostelId } : { isActive: true });
+  if (hostels.length === 0) {
+    logger.warn({ hostelId }, 'sendPaymentReminders: no matching hostel found');
+    return summary;
   }
 
   const errors = [];
-  for (const invoice of overdueInvoices) {
-    try {
-      await processInvoice({
-        invoice,
-        deliveries: deliveriesByInvoice.get(invoice._id.toString()) ?? [],
-        now,
-        summary,
-      });
-    } catch (err) {
-      summary.invoiceErrors += 1;
-      errors.push({ invoiceId: invoice._id.toString(), message: err.message });
-      logger.error({ err, invoiceId: invoice._id }, 'Payment reminder failed for invoice');
+
+  for (const hostel of hostels) {
+    summary.hostelsProcessed += 1;
+    const timezone = isValidTimeZone(hostel.timezone) ? hostel.timezone : 'UTC';
+    if (timezone !== hostel.timezone) {
+      logger.warn(
+        { hostelId: hostel._id, timezone: hostel.timezone },
+        'Invalid hostel timezone, falling back to UTC'
+      );
+    }
+
+    const overdueInvoices = await Invoice.find({
+      hostelId: hostel._id,
+      status: { $in: ['issued', 'partially_paid'] },
+      dueDate: { $lt: now },
+    }).populate('residentId', 'name email phone');
+    summary.overdueInvoices += overdueInvoices.length;
+
+    const allDeliveries = await ReminderDelivery.find({
+      invoiceId: { $in: overdueInvoices.map((i) => i._id) },
+    });
+    const deliveriesByInvoice = new Map();
+    for (const d of allDeliveries) {
+      const key = d.invoiceId.toString();
+      if (!deliveriesByInvoice.has(key)) deliveriesByInvoice.set(key, []);
+      deliveriesByInvoice.get(key).push(d);
+    }
+
+    for (const invoice of overdueInvoices) {
+      try {
+        await processInvoice({
+          invoice,
+          deliveries: deliveriesByInvoice.get(invoice._id.toString()) ?? [],
+          now,
+          summary,
+          timezone,
+        });
+      } catch (err) {
+        summary.invoiceErrors += 1;
+        errors.push({ invoiceId: invoice._id.toString(), message: err.message });
+        logger.error({ err, invoiceId: invoice._id }, 'Payment reminder failed for invoice');
+      }
     }
   }
 
@@ -361,5 +382,5 @@ export async function sendPaymentReminders() {
     );
   }
 
-  return summary; // stored as the BullMQ job's return value → visible in job monitoring
+  return summary;
 }

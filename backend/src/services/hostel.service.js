@@ -4,9 +4,15 @@ import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js'
 import { SUPER_ADMIN_WILDCARD } from '../constants/permissions.js';
 import { uploadBufferToCloudinary, cloudinary } from '../config/cloudinary.js';
 import { recordAuditLog } from './audit.service.js';
+import { upsertHostelJobSchedulers, removeHostelJobSchedulers } from '../jobs/queues.js';
+import { logger } from '../config/logger.js';
 
 function slugify(name) {
-  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
 }
 
 function assertCanAccessHostel(user, hostelId) {
@@ -21,7 +27,16 @@ export async function createHostel(data, actorUserId) {
   const existing = await Hostel.findOne({ slug });
   if (existing) throw ApiError.conflict('A hostel with a similar name already exists');
 
-  return Hostel.create({ ...data, slug, ownerId: actorUserId });
+  const hostel = await Hostel.create({ ...data, slug, ownerId: actorUserId });
+
+  // Best-effort: a Redis hiccup here shouldn't fail hostel creation itself —
+  // worker boot also syncs every active hostel's schedulers, so a missed
+  // schedule here self-heals the next time the worker restarts.
+  upsertHostelJobSchedulers(hostel).catch((err) =>
+    logger.error({ err, hostelId: hostel._id }, 'Failed to schedule jobs for new hostel')
+  );
+
+  return hostel;
 }
 
 export async function listHostels(query) {
@@ -54,6 +69,16 @@ export async function updateHostel(user, id, data) {
     metadata: { fields: Object.keys(data) },
   });
 
+  // Re-sync schedulers if the timezone or active status changed — this is
+  // the whole point of the fix: a hostel that changes its timezone in
+  // Settings gets its jobs rescheduled to match, not left on the old one.
+  if ('timezone' in data || 'isActive' in data) {
+    const resync = hostel.isActive
+      ? upsertHostelJobSchedulers(hostel)
+      : removeHostelJobSchedulers(hostel._id);
+    resync.catch((err) => logger.error({ err, hostelId: id }, 'Failed to re-sync job schedulers'));
+  }
+
   return hostel;
 }
 
@@ -75,7 +100,6 @@ export async function uploadHostelLogo(user, id, file) {
   hostel.logoPublicId = result.public_id;
   await hostel.save();
 
-  // Clean up the old logo now that the new one is saved successfully.
   if (previousPublicId) {
     await cloudinary.uploader.destroy(previousPublicId).catch(() => {});
   }
