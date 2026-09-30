@@ -1,6 +1,8 @@
 import { Hostel } from '../../models/Hostel.model.js';
 import { FeeStructure } from '../../models/FeeStructure.model.js';
 import { Resident } from '../../models/Resident.model.js';
+import { Bed } from '../../models/Bed.model.js';
+import { Room } from '../../models/Room.model.js';
 import { Invoice } from '../../models/Invoice.model.js';
 import { getNextSequence } from '../../models/Counter.model.js';
 import { recordAuditLog } from '../../services/audit.service.js';
@@ -9,12 +11,40 @@ import { logger } from '../../config/logger.js';
 import { isValidTimeZone, getLocalMonthKey } from '../../utils/timezone.js';
 
 /**
+ * Resolves each active resident's current room category via their bed, in
+ * two batched queries — not one query per resident per fee structure.
+ * Residents with no currentBedId map to `null` and are handled explicitly
+ * by the caller (see generateMonthlyInvoices): they still get every
+ * hostel-wide fee, just not category-scoped ones.
+ */
+async function buildResidentCategoryMap(residents) {
+  const bedIds = residents.map((r) => r.currentBedId).filter(Boolean);
+  if (bedIds.length === 0) return new Map();
+
+  const beds = await Bed.find({ _id: { $in: bedIds } }).select('roomId');
+  const bedIdToRoomId = new Map(beds.map((b) => [b._id.toString(), b.roomId.toString()]));
+
+  const roomIds = [...new Set(beds.map((b) => b.roomId.toString()))];
+  const rooms = await Room.find({ _id: { $in: roomIds } }).select('category');
+  const roomIdToCategory = new Map(rooms.map((r) => [r._id.toString(), r.category]));
+
+  const residentIdToCategory = new Map();
+  for (const resident of residents) {
+    if (!resident.currentBedId) continue;
+    const roomId = bedIdToRoomId.get(resident.currentBedId.toString());
+    const category = roomId ? roomIdToCategory.get(roomId) : null;
+    if (category) residentIdToCategory.set(resident._id.toString(), category);
+  }
+  return residentIdToCategory;
+}
+
+/**
  * Generates this month's rent invoice for every active resident of ONE
- * hostel. Scoped by hostelId because each hostel's scheduler now fires in
- * that hostel's own local time (jobs/queues.js), and "this month" must be
- * evaluated in that SAME local time — otherwise a hostel a few hours behind
- * UTC could get billed for next month a few hours early, or one ahead of
- * UTC could miss a day, right around midnight on the 1st.
+ * hostel, applying category-scoped fee structures only to residents whose
+ * current room actually matches that category. A fee with no roomCategory
+ * applies to everyone regardless of bed status. Scoped by hostelId because
+ * each hostel's scheduler fires in that hostel's own local time
+ * (jobs/queues.js), and "this month" is evaluated in that same local time.
  */
 export async function generateMonthlyInvoices({ hostelId } = {}) {
   if (!hostelId) throw new Error('generateMonthlyInvoices requires a hostelId');
@@ -22,7 +52,7 @@ export async function generateMonthlyInvoices({ hostelId } = {}) {
   const hostel = await Hostel.findById(hostelId);
   if (!hostel || !hostel.isActive) {
     logger.warn({ hostelId }, 'generateMonthlyInvoices: hostel not found or inactive, skipping');
-    return { created: 0, skipped: 0 };
+    return { created: 0, skipped: 0, skippedNoBedForCategoryFee: 0 };
   }
 
   const timezone = isValidTimeZone(hostel.timezone) ? hostel.timezone : 'UTC';
@@ -38,6 +68,7 @@ export async function generateMonthlyInvoices({ hostelId } = {}) {
 
   let created = 0;
   let skipped = 0;
+  let skippedNoBedForCategoryFee = 0;
 
   const feeStructures = await FeeStructure.find({
     hostelId: hostel._id,
@@ -47,12 +78,23 @@ export async function generateMonthlyInvoices({ hostelId } = {}) {
 
   if (feeStructures.length > 0) {
     const residents = await Resident.find({ hostelId: hostel._id, status: 'active' });
+    const residentCategories = await buildResidentCategoryMap(residents);
 
     for (const resident of residents) {
+      const residentCategory = residentCategories.get(resident._id.toString()) ?? null;
+
       for (const fee of feeStructures) {
-        // Room-category-specific fee structures are skipped for now — see
-        // the Day 22-era note; unrelated to this timezone fix.
-        if (fee.roomCategory) continue;
+        if (fee.roomCategory) {
+          // Category-scoped fee, but we don't know this resident's room —
+          // explicitly skipped, not silently applied and not an error.
+          if (!resident.currentBedId) {
+            skippedNoBedForCategoryFee += 1;
+            continue;
+          }
+          // Has a bed, but it's not in the matching category — not
+          // applicable to this resident, nothing to log.
+          if (residentCategory !== fee.roomCategory) continue;
+        }
 
         const idempotencyKey = `monthly:${resident._id}:${fee._id}:${monthKey}`;
         const existing = await Invoice.findOne({ hostelId: hostel._id, idempotencyKey });
@@ -63,9 +105,6 @@ export async function generateMonthlyInvoices({ hostelId } = {}) {
 
         const seq = await getNextSequence(`invoice:${hostel._id}`);
         const prefix = hostel.invoicePrefix || 'INV';
-        // Year comes from the hostel-local monthKey, not now.getFullYear()
-        // (which reflects the server process's own timezone) — matters for
-        // the same midnight-boundary reason as the month itself.
         const invoiceNumber = `${prefix}-${monthKey.split('-')[0]}-${String(seq).padStart(6, '0')}`;
 
         const dueDate = new Date(now);
@@ -103,6 +142,7 @@ export async function generateMonthlyInvoices({ hostelId } = {}) {
               automated: true,
               monthKey,
               timezone,
+              roomCategory: fee.roomCategory ?? null,
             },
           });
 
@@ -122,9 +162,16 @@ export async function generateMonthlyInvoices({ hostelId } = {}) {
     }
   }
 
+  if (skippedNoBedForCategoryFee > 0) {
+    logger.warn(
+      { hostelId, skippedNoBedForCategoryFee },
+      'Some active residents have no current bed — category-scoped fees were not applied for them this run'
+    );
+  }
+
   logger.info(
-    { hostelId, created, skipped, monthKey, timezone },
+    { hostelId, created, skipped, skippedNoBedForCategoryFee, monthKey, timezone },
     'Monthly invoice generation run complete'
   );
-  return { created, skipped };
+  return { created, skipped, skippedNoBedForCategoryFee };
 }
