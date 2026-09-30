@@ -14,6 +14,7 @@ import {
   Settings,
   Sparkles,
   TrendingUp,
+  Activity,
 } from 'lucide-react';
 
 /**
@@ -57,6 +58,7 @@ export const navSections = [
       { label: 'Reports', icon: BarChart3, path: '/reports', permission: 'reports.read' },
       { label: 'AI Assistant', icon: Sparkles, path: '/ai-assistant', permission: 'reports.read' },
       { label: 'Audit Log', icon: History, path: '/audit-log', permission: 'settings.manage' },
+      { label: 'Automation', icon: Activity, path: '/automation', permission: 'settings.manage' },
     ],
   },
 ];

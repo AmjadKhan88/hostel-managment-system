@@ -6,17 +6,19 @@ import { monthlyInvoiceQueue, paymentReminderQueue } from '../../jobs/queues.js'
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 import { ApiError } from '../../utils/ApiError.js';
+import * as automationController from '../../controllers/automation.controller.js';
 
 const router = Router();
 
 router.use(authenticate);
 router.use(authorize(PERMISSIONS.SETTINGS_MANAGE));
 
+router.get('/status', automationController.getStatus);
+router.post('/jobs/:queue/:jobId/retry', automationController.retryJob);
+
 router.post(
   '/trigger/monthly-invoices',
   asyncHandler(async (req, res) => {
-    // hostelId is required now — the processor generates invoices for one
-    // hostel, using that hostel's own timezone to decide "this month."
     if (!req.body.hostelId) {
       throw ApiError.badRequest('hostelId is required');
     }
@@ -30,8 +32,6 @@ router.post(
 router.post(
   '/trigger/payment-reminders',
   asyncHandler(async (req, res) => {
-    // hostelId is optional — omit it to run reminders for every active
-    // hostel (mainly useful for testing).
     const job = await paymentReminderQueue.add('send-payment-reminders-manual', {
       hostelId: req.body.hostelId,
     });

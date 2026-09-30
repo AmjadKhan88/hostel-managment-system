@@ -6,6 +6,7 @@ import { logger } from '../config/logger.js';
 import { generateMonthlyInvoices } from './processors/monthlyInvoiceProcessor.js';
 import { sendPaymentReminders } from './processors/paymentReminderProcessor.js';
 import { syncAllHostelSchedulers } from './queues.js';
+import { startWorkerHeartbeat } from './heartbeat.js';
 
 async function bootstrap() {
   await connectDB();
@@ -42,13 +43,21 @@ async function bootstrap() {
   }
 
   const hostelCount = await syncAllHostelSchedulers();
+  const stopHeartbeat = startWorkerHeartbeat();
   logger.info(
     { hostelCount },
-    '🛠️  Worker process started — per-hostel job schedulers synced (timezone-aware)'
+    '🛠️  Worker process started — schedulers synced, heartbeat active (Automation admin page will show this worker as alive)'
   );
 
-  process.on('SIGTERM', () => process.exit(0));
-  process.on('SIGINT', () => process.exit(0));
+  const shutdown = async (signal) => {
+    logger.info(`${signal} received — worker shutting down`);
+    stopHeartbeat();
+    await Promise.all([monthlyInvoiceWorker.close(), paymentReminderWorker.close()]);
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 bootstrap();
