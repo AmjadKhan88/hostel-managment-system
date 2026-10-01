@@ -31,6 +31,7 @@ Thumbs.db
 
 # Testing
 coverage/
+RESIDENT.md
 
 # Uploads (local dev only — production uses object storage)
 backend/uploads/

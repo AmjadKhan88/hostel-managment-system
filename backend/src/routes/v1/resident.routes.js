@@ -27,6 +27,11 @@ router.patch(
   validate({ body: updateResidentSchema }),
   residentController.updateResident
 );
+router.post(
+  '/:id/portal-invite',
+  authorize(PERMISSIONS.STUDENT_UPDATE),
+  residentController.invitePortalAccount
+);
 
 // Documents, nested under their resident.
 router.post(
@@ -36,7 +41,11 @@ router.post(
   validate({ body: uploadDocumentSchema }),
   documentController.uploadDocument
 );
-router.get('/:residentId/documents', authorize(PERMISSIONS.STUDENT_READ), documentController.listDocuments);
+router.get(
+  '/:residentId/documents',
+  authorize(PERMISSIONS.STUDENT_READ),
+  documentController.listDocuments
+);
 router.delete(
   '/:residentId/documents/:id',
   authorize(PERMISSIONS.STUDENT_UPDATE),

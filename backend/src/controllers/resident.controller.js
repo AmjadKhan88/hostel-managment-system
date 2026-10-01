@@ -21,3 +21,8 @@ export const updateResident = asyncHandler(async (req, res) => {
   const resident = await residentService.updateResident(req.user, req.params.id, req.body);
   new ApiResponse(200, { resident }, 'Resident updated successfully').send(res);
 });
+
+export const invitePortalAccount = asyncHandler(async (req, res) => {
+  const result = await residentService.invitePortalAccount(req.user, req.params.id);
+  new ApiResponse(200, result, 'Portal invite sent').send(res);
+});

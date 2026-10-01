@@ -20,6 +20,23 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(10, 'JWT_REFRESH_SECRET must be at least 10 characters'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
 
+  // Resident Portal auth — deliberately SEPARATE secrets from staff JWTs
+  // (not just a "type" flag on the same secret), so a bug in a type-check
+  // can't let one kind of token work where it shouldn't; a wrong secret
+  // just fails verification outright.
+  RESIDENT_ACCESS_SECRET: z
+    .string()
+    .min(10, 'RESIDENT_ACCESS_SECRET must be at least 10 characters'),
+  RESIDENT_ACCESS_EXPIRY: z.string().default('15m'),
+  RESIDENT_REFRESH_SECRET: z
+    .string()
+    .min(10, 'RESIDENT_REFRESH_SECRET must be at least 10 characters'),
+  RESIDENT_REFRESH_EXPIRY: z.string().default('7d'),
+  PORTAL_SETUP_TOKEN_EXPIRY_HOURS: z.coerce.number().int().positive().default(48),
+
+  // Used to build links in portal invite/reset emails (e.g. https://app.example.com)
+  FRONTEND_URL: z.string().default('http://localhost:5173'),
+
   REDIS_URL: z.string().default('redis://127.0.0.1:6379'),
 
   CLOUDINARY_CLOUD_NAME: z.string().optional().default(''),
@@ -42,7 +59,6 @@ const envSchema = z.object({
   SMTP_PASSWORD: z.string().optional().default(''),
   SMTP_FROM_EMAIL: z.string().optional().default('no-reply@example.com'),
   SMTP_FROM_NAME: z.string().optional().default('Hostel Management System'),
-
 });
 
 const parsed = envSchema.safeParse(process.env);

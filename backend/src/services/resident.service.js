@@ -3,14 +3,20 @@ import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
 import { recordAuditLog } from './audit.service.js';
+import { inviteResidentToPortal } from './residentAuth.service.js';
 
 export async function createResident(user, data) {
   const hostelId = resolveHostelScope(user, data.hostelId);
   if (!hostelId) throw ApiError.badRequest('hostelId is required');
 
-  const existing = await Resident.findOne({ hostelId, registrationNumber: data.registrationNumber });
+  const existing = await Resident.findOne({
+    hostelId,
+    registrationNumber: data.registrationNumber,
+  });
   if (existing) {
-    throw ApiError.conflict('A resident with this registration number already exists in this hostel');
+    throw ApiError.conflict(
+      'A resident with this registration number already exists in this hostel'
+    );
   }
 
   const resident = await Resident.create({ ...data, hostelId });
@@ -37,7 +43,12 @@ export async function listResidents(user, query) {
   if (query.unallocated === 'true') filter.currentBedId = null;
   if (query.search) {
     const regex = { $regex: query.search, $options: 'i' };
-    filter.$or = [{ name: regex }, { email: regex }, { phone: regex }, { registrationNumber: regex }];
+    filter.$or = [
+      { name: regex },
+      { email: regex },
+      { phone: regex },
+      { registrationNumber: regex },
+    ];
   }
 
   const [items, total] = await Promise.all([
@@ -70,4 +81,12 @@ export async function updateResident(user, id, data) {
   });
 
   return resident;
+}
+
+export async function invitePortalAccount(user, residentId) {
+  // Reuses getResidentById purely for its object-level hostel-scope check
+  // — a staff member can only invite a resident belonging to their own
+  // hostel, same guarantee as every other resident action.
+  await getResidentById(user, residentId);
+  return inviteResidentToPortal(user, residentId);
 }
