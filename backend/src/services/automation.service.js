@@ -1,4 +1,8 @@
-import { monthlyInvoiceQueue, paymentReminderQueue } from '../jobs/queues.js';
+import {
+  monthlyInvoiceQueue,
+  paymentReminderQueue,
+  recurringExpenseQueue,
+} from '../jobs/queues.js';
 import { getWorkerHeartbeat } from '../jobs/heartbeat.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
@@ -7,6 +11,7 @@ import { SUPER_ADMIN_WILDCARD } from '../constants/permissions.js';
 const QUEUES = {
   'monthly-invoices': monthlyInvoiceQueue,
   'payment-reminders': paymentReminderQueue,
+  'recurring-expenses': recurringExpenseQueue,
 };
 
 function getQueue(name) {
@@ -35,10 +40,6 @@ async function summarizeQueue(queue, hostelId) {
     queue.getJobSchedulers(),
   ]);
 
-  // hostelId is null for a Super Admin viewing "all hostels" — no filter.
-  // For hostel-scoped staff, resolveHostelScope already forced this to
-  // their own hostel before we got here, so filtering is always correct,
-  // never a bypassable client-supplied value.
   const filterByHostel = (jobs) =>
     hostelId ? jobs.filter((j) => j.data?.hostelId === hostelId) : jobs;
   const relevantSchedulers = hostelId
@@ -61,15 +62,20 @@ async function summarizeQueue(queue, hostelId) {
 export async function getAutomationStatus(user, hostelId) {
   const resolvedHostelId = resolveHostelScope(user, hostelId);
 
-  const [monthlyInvoices, paymentReminders, worker] = await Promise.all([
+  const [monthlyInvoices, paymentReminders, recurringExpenses, worker] = await Promise.all([
     summarizeQueue(monthlyInvoiceQueue, resolvedHostelId),
     summarizeQueue(paymentReminderQueue, resolvedHostelId),
+    summarizeQueue(recurringExpenseQueue, resolvedHostelId),
     getWorkerHeartbeat(),
   ]);
 
   return {
     worker,
-    queues: { 'monthly-invoices': monthlyInvoices, 'payment-reminders': paymentReminders },
+    queues: {
+      'monthly-invoices': monthlyInvoices,
+      'payment-reminders': paymentReminders,
+      'recurring-expenses': recurringExpenses,
+    },
   };
 }
 
@@ -83,9 +89,6 @@ export async function retryJob(user, queueName, jobId) {
     throw ApiError.badRequest(`Only failed jobs can be retried (current state: ${state})`);
   }
 
-  // Object-level check: a hostel-scoped user may only retry a job that
-  // belongs to their own hostel. A job with no hostelId (an "all hostels"
-  // manual trigger) can only be retried by a Super Admin.
   const isSuperAdmin = user.permissions.includes(SUPER_ADMIN_WILDCARD);
   if (!isSuperAdmin && (!job.data?.hostelId || job.data.hostelId !== user.hostelId)) {
     throw ApiError.forbidden('You can only retry jobs for your own hostel');

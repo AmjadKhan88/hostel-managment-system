@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, TrendingUp, TrendingDown, Wallet, Sparkles, Trash2 } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Wallet, Sparkles, Trash2, Pencil, Repeat } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import StatCard from '@/components/ui/StatCard.jsx';
@@ -20,7 +20,7 @@ export default function FinancePage() {
   const selectedHostelId = useHostelStore((s) => s.selectedHostelId);
   const effectiveHostelId = user?.hostelId ?? selectedHostelId;
 
-  const [modalOpen, setModalOpen] = useState(false);
+  const [modalState, setModalState] = useState({ open: false, expense: null });
   const [deleting, setDeleting] = useState(null);
 
   const { data: overviewData, isLoading } = useFinancialOverview(effectiveHostelId);
@@ -55,7 +55,7 @@ export default function FinancePage() {
         description={`Income vs. expenses for ${overview.month}.`}
         action={
           <button
-            onClick={() => setModalOpen(true)}
+            onClick={() => setModalState({ open: true, expense: null })}
             className="flex items-center gap-1.5 rounded-control bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
           >
             <Plus size={16} /> Record Expense
@@ -117,13 +117,32 @@ export default function FinancePage() {
                   className="flex items-center justify-between rounded-control border border-border px-3 py-2 text-sm"
                 >
                   <div>
-                    <p className="font-medium text-ink">{e.title}</p>
+                    <p className="flex items-center gap-1.5 font-medium text-ink">
+                      {e.title}
+                      {e.recurrence === 'monthly' && (
+                        <span title="Recurs automatically each month">
+                          <Repeat size={12} className="text-brand-600" />
+                        </span>
+                      )}
+                      {!e.recordedBy && (
+                        <span className="rounded-pill bg-canvas px-1.5 py-0.5 text-[10px] font-medium text-ink-subtle">
+                          auto
+                        </span>
+                      )}
+                    </p>
                     <p className="text-xs text-ink-subtle">
                       {e.category.replace('_', ' ')} · {new Date(e.incurredAt).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-ink">{formatMoney(e.amountMinorUnits)}</span>
+                    <button
+                      onClick={() => setModalState({ open: true, expense: e })}
+                      className="rounded-control p-1 text-ink-muted hover:bg-canvas"
+                      aria-label="Edit expense"
+                    >
+                      <Pencil size={14} />
+                    </button>
                     <button
                       onClick={() => setDeleting(e)}
                       className="rounded-control p-1 text-danger hover:bg-danger-bg"
@@ -156,7 +175,12 @@ export default function FinancePage() {
         </button>
       </div>
 
-      <ExpenseFormModal open={modalOpen} onClose={() => setModalOpen(false)} hostelId={effectiveHostelId} />
+      <ExpenseFormModal
+        open={modalState.open}
+        onClose={() => setModalState({ open: false, expense: null })}
+        hostelId={effectiveHostelId}
+        expense={modalState.expense}
+      />
 
       <ConfirmDialog
         open={Boolean(deleting)}

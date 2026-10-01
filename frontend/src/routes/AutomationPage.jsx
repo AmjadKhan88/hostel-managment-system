@@ -8,6 +8,7 @@ import { useAutomationStatus, useRetryJob, useTriggerJob } from '@/features/auto
 
 const QUEUE_LABELS = {
   'monthly-invoices': 'Monthly Invoice Generation',
+  'recurring-expenses': 'Recurring Expense Generation',
   'payment-reminders': 'Payment Reminders',
 };
 

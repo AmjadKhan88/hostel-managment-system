@@ -5,6 +5,7 @@ import { connectDB } from '../config/db.js';
 import { logger } from '../config/logger.js';
 import { generateMonthlyInvoices } from './processors/monthlyInvoiceProcessor.js';
 import { sendPaymentReminders } from './processors/paymentReminderProcessor.js';
+import { generateRecurringExpenses } from './processors/recurringExpenseProcessor.js';
 import { syncAllHostelSchedulers } from './queues.js';
 import { startWorkerHeartbeat } from './heartbeat.js';
 
@@ -26,8 +27,14 @@ async function bootstrap() {
       connection,
     }
   );
+  const recurringExpenseWorker = new Worker(
+    'recurring-expense-generation',
+    (job) => generateRecurringExpenses(job.data),
+    { connection }
+  );
 
-  for (const worker of [monthlyInvoiceWorker, paymentReminderWorker]) {
+  const workers = [monthlyInvoiceWorker, paymentReminderWorker, recurringExpenseWorker];
+  for (const worker of workers) {
     worker.on('completed', (job) =>
       logger.info(
         { jobId: job.id, queue: job.queueName, hostelId: job.data?.hostelId },
@@ -52,7 +59,7 @@ async function bootstrap() {
   const shutdown = async (signal) => {
     logger.info(`${signal} received — worker shutting down`);
     stopHeartbeat();
-    await Promise.all([monthlyInvoiceWorker.close(), paymentReminderWorker.close()]);
+    await Promise.all(workers.map((w) => w.close()));
     process.exit(0);
   };
 

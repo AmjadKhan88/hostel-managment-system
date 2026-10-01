@@ -5,6 +5,8 @@ export const automationApi = {
   retryJob: (queue, jobId) => apiClient.post(`/automation/jobs/${queue}/${jobId}/retry`),
   triggerMonthlyInvoices: (hostelId) =>
     apiClient.post('/automation/trigger/monthly-invoices', { hostelId }),
+  triggerRecurringExpenses: (hostelId) =>
+    apiClient.post('/automation/trigger/recurring-expenses', { hostelId }),
   triggerPaymentReminders: (hostelId) =>
     apiClient.post('/automation/trigger/payment-reminders', { hostelId }),
 };

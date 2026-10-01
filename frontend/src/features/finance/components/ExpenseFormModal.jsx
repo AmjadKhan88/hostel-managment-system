@@ -1,37 +1,60 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from '@/components/ui/Modal.jsx';
-import { toMinorUnits } from '@/lib/money';
-import { useCreateExpense } from '../hooks/useFinance';
+import { toMinorUnits, formatMoney } from '@/lib/money';
+import { useCreateExpense, useUpdateExpense } from '../hooks/useFinance';
 
 const CATEGORIES = ['electricity', 'water', 'internet', 'salary', 'maintenance_supplies', 'technical', 'rent', 'other'];
 
-export default function ExpenseFormModal({ open, onClose, hostelId }) {
+function toFormValues(expense) {
+  if (!expense) {
+    return { title: '', category: 'electricity', amount: '', recurrence: 'one_time', incurredAt: '' };
+  }
+  return {
+    title: expense.title,
+    category: expense.category,
+    amount: (expense.amountMinorUnits / 100).toFixed(2),
+    recurrence: expense.recurrence,
+    incurredAt: expense.incurredAt ? expense.incurredAt.slice(0, 10) : '',
+  };
+}
+
+export default function ExpenseFormModal({ open, onClose, hostelId, expense }) {
+  const isEdit = Boolean(expense);
   const createExpense = useCreateExpense();
-  const [form, setForm] = useState({
-    title: '',
-    category: 'electricity',
-    amount: '',
-    recurrence: 'one_time',
-    incurredAt: '',
-  });
+  const updateExpense = useUpdateExpense();
+  const mutation = isEdit ? updateExpense : createExpense;
+
+  const [form, setForm] = useState(toFormValues(expense));
+
+  useEffect(() => {
+    if (open) setForm(toFormValues(expense));
+  }, [open, expense]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title.trim() || !form.amount) return;
-    await createExpense.mutateAsync({
-      hostelId,
+
+    const payload = {
       title: form.title.trim(),
       category: form.category,
       amountMinorUnits: toMinorUnits(form.amount),
       recurrence: form.recurrence,
       incurredAt: form.incurredAt || undefined,
-    });
-    setForm({ title: '', category: 'electricity', amount: '', recurrence: 'one_time', incurredAt: '' });
+    };
+
+    if (isEdit) {
+      await mutation.mutateAsync({ id: expense._id, data: payload });
+    } else {
+      await mutation.mutateAsync({ hostelId, ...payload });
+    }
     onClose();
   };
 
+  const wasMonthly = expense?.recurrence === 'monthly';
+  const isTurningOff = isEdit && wasMonthly && form.recurrence === 'one_time';
+
   return (
-    <Modal open={open} onClose={onClose} title="Record Expense">
+    <Modal open={open} onClose={onClose} title={isEdit ? 'Edit Expense' : 'Record Expense'}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1.5 block text-sm font-medium text-ink">Title</label>
@@ -94,18 +117,26 @@ export default function ExpenseFormModal({ open, onClose, hostelId }) {
           </div>
         </div>
 
-        {createExpense.isError && (
+        <p className="text-xs text-ink-subtle">
+          {form.recurrence === 'monthly'
+            ? `Monthly: a new expense will be generated automatically each month, using this exact title/category/amount${form.amount ? ` (${formatMoney(toMinorUnits(form.amount))})` : ''
+            } — until you edit the most recent one and set it back to One-time.`
+            : 'One-time: recorded once, nothing generated automatically.'}
+          {isTurningOff && ' This will stop future months from being generated for this expense.'}
+        </p>
+
+        {mutation.isError && (
           <div className="rounded-control bg-danger-bg px-3.5 py-2.5 text-sm text-danger">
-            {createExpense.error.message}
+            {mutation.error.message}
           </div>
         )}
 
         <button
           type="submit"
-          disabled={createExpense.isPending}
+          disabled={mutation.isPending}
           className="w-full rounded-control bg-brand-500 py-2.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
         >
-          {createExpense.isPending ? 'Saving…' : 'Record expense'}
+          {mutation.isPending ? 'Saving…' : isEdit ? 'Save changes' : 'Record expense'}
         </button>
       </form>
     </Modal>

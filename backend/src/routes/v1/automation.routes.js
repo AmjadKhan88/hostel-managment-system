@@ -2,7 +2,11 @@ import { Router } from 'express';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { PERMISSIONS } from '../../constants/permissions.js';
-import { monthlyInvoiceQueue, paymentReminderQueue } from '../../jobs/queues.js';
+import {
+  monthlyInvoiceQueue,
+  paymentReminderQueue,
+  recurringExpenseQueue,
+} from '../../jobs/queues.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 import { ApiError } from '../../utils/ApiError.js';
@@ -19,13 +23,22 @@ router.post('/jobs/:queue/:jobId/retry', automationController.retryJob);
 router.post(
   '/trigger/monthly-invoices',
   asyncHandler(async (req, res) => {
-    if (!req.body.hostelId) {
-      throw ApiError.badRequest('hostelId is required');
-    }
+    if (!req.body.hostelId) throw ApiError.badRequest('hostelId is required');
     const job = await monthlyInvoiceQueue.add('generate-monthly-invoices-manual', {
       hostelId: req.body.hostelId,
     });
     new ApiResponse(202, { jobId: job.id }, 'Monthly invoice generation job queued').send(res);
+  })
+);
+
+router.post(
+  '/trigger/recurring-expenses',
+  asyncHandler(async (req, res) => {
+    if (!req.body.hostelId) throw ApiError.badRequest('hostelId is required');
+    const job = await recurringExpenseQueue.add('generate-recurring-expenses-manual', {
+      hostelId: req.body.hostelId,
+    });
+    new ApiResponse(202, { jobId: job.id }, 'Recurring expense generation job queued').send(res);
   })
 );
 

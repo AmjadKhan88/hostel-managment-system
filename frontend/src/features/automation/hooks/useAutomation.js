@@ -21,11 +21,13 @@ export function useRetryJob(hostelId) {
 
 export function useTriggerJob(hostelId) {
   const queryClient = useQueryClient();
+  const triggerByType = {
+    'monthly-invoices': automationApi.triggerMonthlyInvoices,
+    'recurring-expenses': automationApi.triggerRecurringExpenses,
+    'payment-reminders': automationApi.triggerPaymentReminders,
+  };
   return useMutation({
-    mutationFn: ({ type }) =>
-      type === 'monthly-invoices'
-        ? automationApi.triggerMonthlyInvoices(hostelId)
-        : automationApi.triggerPaymentReminders(hostelId),
+    mutationFn: ({ type }) => triggerByType[type](hostelId),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ['automation', 'status', hostelId] }),
   });
