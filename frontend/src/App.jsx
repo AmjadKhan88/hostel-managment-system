@@ -28,9 +28,28 @@ import AIAssistantPage from '@/routes/AIAssistantPage.jsx';
 import FinancePage from '@/routes/FinancePage.jsx';
 import AutomationPage from '@/routes/AutomationPage.jsx';
 
+import { useResidentSessionHydration } from '@/features/portalAuth/hooks/useResidentSessionHydration';
+import PortalLoginPage from '@/routes/portal/PortalLoginPage.jsx';
+import PortalSetupPasswordPage from '@/routes/portal/PortalSetupPasswordPage.jsx';
+import PortalForgotPasswordPage from '@/routes/portal/PortalForgotPasswordPage.jsx';
+import PortalResetPasswordPage from '@/routes/portal/PortalResetPasswordPage.jsx';
+import PortalProtectedRoute from '@/components/portal/PortalProtectedRoute.jsx';
+import PortalLayout from '@/components/portal/PortalLayout.jsx';
+import PortalDashboardPage from '@/routes/portal/PortalDashboardPage.jsx';
+import PortalInvoicesPage from '@/routes/portal/PortalInvoicesPage.jsx';
+import PortalInvoiceDetailPage from '@/routes/portal/PortalInvoiceDetailPage.jsx';
+import PortalPaymentsPage from '@/routes/portal/PortalPaymentsPage.jsx';
+import PortalComplaintsPage from '@/routes/portal/PortalComplaintsPage.jsx';
+import PortalComplaintDetailPage from '@/routes/portal/PortalComplaintDetailPage.jsx';
+import PortalNoticesPage from '@/routes/portal/PortalNoticesPage.jsx';
+
 export default function App() {
   useSessionHydration();
   useRealtimeNotifications();
+
+  useSessionHydration();
+  useRealtimeNotifications();
+  useResidentSessionHydration();
 
   return (
     <>
@@ -62,6 +81,24 @@ export default function App() {
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
+
+        {/* Resident Portal — completely separate auth/layout tree from staff */}
+        <Route path="/portal/login" element={<PortalLoginPage />} />
+        <Route path="/portal/set-password" element={<PortalSetupPasswordPage />} />
+        <Route path="/portal/forgot-password" element={<PortalForgotPasswordPage />} />
+        <Route path="/portal/reset-password" element={<PortalResetPasswordPage />} />
+        <Route element={<PortalProtectedRoute />}>
+          <Route element={<PortalLayout />}>
+            <Route path="/portal" element={<PortalDashboardPage />} />
+            <Route path="/portal/invoices" element={<PortalInvoicesPage />} />
+            <Route path="/portal/invoices/:invoiceId" element={<PortalInvoiceDetailPage />} />
+            <Route path="/portal/payments" element={<PortalPaymentsPage />} />
+            <Route path="/portal/complaints" element={<PortalComplaintsPage />} />
+            <Route path="/portal/complaints/:complaintId" element={<PortalComplaintDetailPage />} />
+            <Route path="/portal/notices" element={<PortalNoticesPage />} />
+          </Route>
+        </Route>
+
       </Routes>
       <ToastContainer />
     </>

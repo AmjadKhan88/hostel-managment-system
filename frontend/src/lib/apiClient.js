@@ -1,11 +1,12 @@
 import axios from 'axios';
 import { config } from '@/config/env';
 import { useAuthStore } from '@/store/authStore';
+import { useResidentAuthStore } from '@/store/residentAuthStore';
 
 /**
- * Single axios instance used by every feature's API layer.
- * withCredentials is required because auth uses HttpOnly cookies rather
- * than tokens in localStorage (see MASTER PROJECT INSTRUCTIONS §16).
+ * Single axios instance used by every feature's API layer — including the
+ * Resident Portal. withCredentials is required because both auth systems
+ * use HttpOnly cookies rather than tokens in localStorage.
  */
 export const apiClient = axios.create({
   baseURL: config.apiBaseUrl,
@@ -13,12 +14,14 @@ export const apiClient = axios.create({
   timeout: 15_000,
 });
 
-let isRefreshing = false;
-let pendingQueue = [];
+let isRefreshingStaff = false;
+let staffPendingQueue = [];
+let isRefreshingResident = false;
+let residentPendingQueue = [];
 
-function resolvePendingQueue(error) {
-  pendingQueue.forEach(({ resolve, reject }) => (error ? reject(error) : resolve()));
-  pendingQueue = [];
+function resolveQueue(queue, error) {
+  queue.forEach(({ resolve, reject }) => (error ? reject(error) : resolve()));
+  return [];
 }
 
 function normalizeError(error) {
@@ -35,34 +38,64 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     const status = error.response?.status;
-    const isAuthEndpoint =
-      originalRequest?.url?.includes('/auth/login') || originalRequest?.url?.includes('/auth/refresh');
+    const url = originalRequest?.url ?? '';
+    // The ONLY thing that decides which auth system a failing request
+    // belongs to — a resident's expired session must never attempt a
+    // staff refresh, or vice versa.
+    const isPortalRequest = url.includes('/portal/');
+    const isAuthEndpoint = isPortalRequest
+      ? url.includes('/portal/auth/login') || url.includes('/portal/auth/refresh')
+      : url.includes('/auth/login') || url.includes('/auth/refresh');
 
-    // On a 401 from a protected endpoint, try one silent refresh, then retry
-    // the original request. Concurrent 401s share a single refresh call.
     if (status === 401 && !originalRequest?._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
 
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          pendingQueue.push({ resolve, reject });
-        }).then(() => apiClient(originalRequest));
+      if (isPortalRequest) {
+        if (isRefreshingResident) {
+          return new Promise((resolve, reject) => {
+            residentPendingQueue.push({ resolve, reject });
+          }).then(() => apiClient(originalRequest));
+        }
+        isRefreshingResident = true;
+        try {
+          await apiClient.post('/portal/auth/refresh');
+          residentPendingQueue = resolveQueue(residentPendingQueue, null);
+          return apiClient(originalRequest);
+        } catch (refreshError) {
+          residentPendingQueue = resolveQueue(residentPendingQueue, refreshError);
+          useResidentAuthStore.getState().clearResident();
+          if (
+            typeof window !== 'undefined' &&
+            !window.location.pathname.startsWith('/portal/login')
+          ) {
+            window.location.assign('/portal/login');
+          }
+          return Promise.reject(normalizeError(refreshError));
+        } finally {
+          isRefreshingResident = false;
+        }
       }
 
-      isRefreshing = true;
+      // Staff path — unchanged behavior from before this phase.
+      if (isRefreshingStaff) {
+        return new Promise((resolve, reject) => {
+          staffPendingQueue.push({ resolve, reject });
+        }).then(() => apiClient(originalRequest));
+      }
+      isRefreshingStaff = true;
       try {
         await apiClient.post('/auth/refresh');
-        resolvePendingQueue(null);
+        staffPendingQueue = resolveQueue(staffPendingQueue, null);
         return apiClient(originalRequest);
       } catch (refreshError) {
-        resolvePendingQueue(refreshError);
+        staffPendingQueue = resolveQueue(staffPendingQueue, refreshError);
         useAuthStore.getState().clearUser();
         if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
           window.location.assign('/login');
         }
         return Promise.reject(normalizeError(refreshError));
       } finally {
-        isRefreshing = false;
+        isRefreshingStaff = false;
       }
     }
 
