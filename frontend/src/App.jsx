@@ -46,9 +46,6 @@ import PortalNoticesPage from '@/routes/portal/PortalNoticesPage.jsx';
 export default function App() {
   useSessionHydration();
   useRealtimeNotifications();
-
-  useSessionHydration();
-  useRealtimeNotifications();
   useResidentSessionHydration();
 
   return (
