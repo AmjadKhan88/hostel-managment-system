@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Menu, X, LogOut, Home, FileText, Wallet, MessageSquareWarning, Megaphone } from 'lucide-react';
+import { Menu, X, LogOut, Home, FileText, Wallet, MessageSquareWarning, Megaphone, User } from 'lucide-react';
 import { useResidentAuthStore } from '@/store/residentAuthStore';
 import { usePortalLogout } from '@/features/portalAuth/hooks/usePortalAuth';
 
@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { label: 'Payments', icon: Wallet, path: '/portal/payments' },
   { label: 'Complaints', icon: MessageSquareWarning, path: '/portal/complaints' },
   { label: 'Notices', icon: Megaphone, path: '/portal/notices' },
+  { label: 'Profile', icon: User, path: '/portal/profile' },
 ];
 
 export default function PortalLayout() {

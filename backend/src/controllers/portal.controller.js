@@ -36,3 +36,28 @@ export const listMyNotices = asyncHandler(async (req, res) => {
   const result = await portalService.listMyNotices(req.resident, req.query);
   new ApiResponse(200, result, 'Notices fetched successfully').send(res);
 });
+
+export const getMyProfile = asyncHandler(async (req, res) => {
+  const resident = await portalService.getMyProfile(req.resident);
+  new ApiResponse(200, { resident }, 'Profile fetched successfully').send(res);
+});
+
+export const updateMyProfile = asyncHandler(async (req, res) => {
+  const resident = await portalService.updateMyProfile(req.resident, req.body);
+  new ApiResponse(200, { resident }, 'Profile updated successfully').send(res);
+});
+
+export const listMyDocuments = asyncHandler(async (req, res) => {
+  const documents = await portalService.listMyDocuments(req.resident);
+  new ApiResponse(200, { documents }, 'Documents fetched successfully').send(res);
+});
+
+export const uploadMyDocument = asyncHandler(async (req, res) => {
+  const document = await portalService.uploadMyDocument(req.resident, req.file, req.body);
+  new ApiResponse(201, { document }, 'Document uploaded successfully').send(res);
+});
+
+export const deleteMyDocument = asyncHandler(async (req, res) => {
+  await portalService.deleteMyDocument(req.resident, req.params.id);
+  new ApiResponse(200, null, 'Document deleted successfully').send(res);
+});

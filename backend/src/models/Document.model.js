@@ -5,7 +5,12 @@ export const DOCUMENT_TYPES = ['id_card', 'guardian_id', 'photo', 'admission_for
 const documentSchema = new mongoose.Schema(
   {
     hostelId: { type: mongoose.Schema.Types.ObjectId, ref: 'Hostel', required: true, index: true },
-    residentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Resident', required: true, index: true },
+    residentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Resident',
+      required: true,
+      index: true,
+    },
 
     fileType: { type: String, enum: DOCUMENT_TYPES, default: 'other' },
     originalFileName: { type: String, required: true, trim: true },
@@ -17,7 +22,7 @@ const documentSchema = new mongoose.Schema(
     url: { type: String, required: true },
     publicId: { type: String, required: true },
 
-    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   },
   { timestamps: true }
 );

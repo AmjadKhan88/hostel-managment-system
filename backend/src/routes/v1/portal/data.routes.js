@@ -1,15 +1,16 @@
 import { Router } from 'express';
 import { authenticateResident } from '../../../middlewares/authenticateResident.js';
 import { validate } from '../../../middlewares/validate.js';
-import { submitComplaintSchema } from '../../../validators/portal.validator.js';
+import { upload } from '../../../middlewares/upload.js';
+import {
+  submitComplaintSchema,
+  updateMyProfileSchema,
+  uploadMyDocumentSchema,
+} from '../../../validators/portal.validator.js';
 import * as portalController from '../../../controllers/portal.controller.js';
 
 const router = Router();
 
-// Every route below requires a resident session. There are no permission
-// checks beyond that — a resident's only "permission" is access to their
-// own data, which portal.service.js enforces via the query filters
-// themselves, not a role/permission system like staff has.
 router.use(authenticateResident);
 
 router.get('/invoices', portalController.listMyInvoices);
@@ -26,5 +27,21 @@ router.post(
 );
 
 router.get('/notices', portalController.listMyNotices);
+
+router.get('/profile', portalController.getMyProfile);
+router.patch(
+  '/profile',
+  validate({ body: updateMyProfileSchema }),
+  portalController.updateMyProfile
+);
+
+router.get('/documents', portalController.listMyDocuments);
+router.post(
+  '/documents',
+  upload.single('file'),
+  validate({ body: uploadMyDocumentSchema }),
+  portalController.uploadMyDocument
+);
+router.delete('/documents/:id', portalController.deleteMyDocument);
 
 export default router;

@@ -4,10 +4,12 @@ import { Invoice } from '../models/Invoice.model.js';
 import { Payment } from '../models/Payment.model.js';
 import { Complaint } from '../models/Complaint.model.js';
 import { Notice } from '../models/Notice.model.js';
+import { Document } from '../models/Document.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
 import { emitToHostel } from '../events/socketEvents.js';
 import { recordAuditLog } from './audit.service.js';
+import { uploadBufferToCloudinary, cloudinary } from '../config/cloudinary.js';
 
 // ---- Invoices ----
 
@@ -143,4 +145,84 @@ export async function listMyNotices(residentAuth, query) {
     Notice.countDocuments(filter),
   ]);
   return buildPaginatedResponse({ items, total, page, limit });
+}
+
+// ---- Profile ----
+
+export async function getMyProfile(residentAuth) {
+  const resident = await Resident.findById(residentAuth.id);
+  if (!resident) throw ApiError.notFound('Resident not found');
+  return resident;
+}
+
+const EDITABLE_PROFILE_FIELDS = ['phone', 'guardian'];
+
+export async function updateMyProfile(residentAuth, data) {
+  const resident = await Resident.findById(residentAuth.id);
+  if (!resident) throw ApiError.notFound('Resident not found');
+
+  for (const field of EDITABLE_PROFILE_FIELDS) {
+    if (data[field] !== undefined) resident[field] = data[field];
+  }
+  await resident.save();
+
+  recordAuditLog({
+    hostelId: residentAuth.hostelId,
+    actorId: null,
+    actorName: resident.name,
+    action: 'resident.updated',
+    entityType: 'Resident',
+    entityId: resident._id,
+    metadata: { fields: Object.keys(data), updatedByResident: true },
+  });
+
+  return resident;
+}
+
+// ---- Documents ----
+
+export async function listMyDocuments(residentAuth) {
+  return Document.find({ hostelId: residentAuth.hostelId, residentId: residentAuth.id }).sort({
+    createdAt: -1,
+  });
+}
+
+export async function uploadMyDocument(residentAuth, file, { fileType }) {
+  if (!file) throw ApiError.badRequest('No file was uploaded');
+
+  const result = await uploadBufferToCloudinary(file.buffer, {
+    folder: `hostel-management/${residentAuth.hostelId}/residents/${residentAuth.id}`,
+    resource_type: 'auto',
+  });
+
+  try {
+    return await Document.create({
+      hostelId: residentAuth.hostelId,
+      residentId: residentAuth.id,
+      fileType,
+      originalFileName: file.originalname,
+      mimeType: file.mimetype,
+      sizeBytes: file.size,
+      url: result.secure_url,
+      publicId: result.public_id,
+      uploadedBy: null, // self-uploaded, not a staff action
+    });
+  } catch (err) {
+    // The Cloudinary upload already succeeded — clean it up if the DB
+    // write failed, same pattern as the staff-side upload (Day 25).
+    await cloudinary.uploader.destroy(result.public_id).catch(() => {});
+    throw err;
+  }
+}
+
+export async function deleteMyDocument(residentAuth, documentId) {
+  const doc = await Document.findOne({
+    _id: documentId,
+    hostelId: residentAuth.hostelId,
+    residentId: residentAuth.id,
+  });
+  if (!doc) throw ApiError.notFound('Document not found');
+
+  await cloudinary.uploader.destroy(doc.publicId).catch(() => {});
+  await doc.deleteOne();
 }

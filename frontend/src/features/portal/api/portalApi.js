@@ -8,4 +8,9 @@ export const portalApi = {
   complaint: (id) => apiClient.get(`/portal/complaints/${id}`),
   submitComplaint: (data) => apiClient.post('/portal/complaints', data),
   notices: (params) => apiClient.get('/portal/notices', { params }),
+  profile: () => apiClient.get('/portal/profile'),
+  updateProfile: (data) => apiClient.patch('/portal/profile', data),
+  documents: () => apiClient.get('/portal/documents'),
+  uploadDocument: (formData) => apiClient.post('/portal/documents', formData),
+  deleteDocument: (id) => apiClient.delete(`/portal/documents/${id}`),
 };

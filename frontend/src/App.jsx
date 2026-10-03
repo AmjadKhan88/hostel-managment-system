@@ -42,6 +42,7 @@ import PortalPaymentsPage from '@/routes/portal/PortalPaymentsPage.jsx';
 import PortalComplaintsPage from '@/routes/portal/PortalComplaintsPage.jsx';
 import PortalComplaintDetailPage from '@/routes/portal/PortalComplaintDetailPage.jsx';
 import PortalNoticesPage from '@/routes/portal/PortalNoticesPage.jsx';
+import PortalProfilePage from '@/routes/portal/PortalProfilePage.jsx';
 
 export default function App() {
   useSessionHydration();
@@ -93,6 +94,7 @@ export default function App() {
             <Route path="/portal/complaints" element={<PortalComplaintsPage />} />
             <Route path="/portal/complaints/:complaintId" element={<PortalComplaintDetailPage />} />
             <Route path="/portal/notices" element={<PortalNoticesPage />} />
+            <Route path="/portal/profile" element={<PortalProfilePage />} />
           </Route>
         </Route>
 

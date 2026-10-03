@@ -52,3 +52,35 @@ export function usePortalNotices(params) {
     queryFn: () => portalApi.notices(params),
   });
 }
+
+export function usePortalProfile() {
+  return useQuery({ queryKey: ['portal', 'profile'], queryFn: portalApi.profile });
+}
+
+export function useUpdatePortalProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: portalApi.updateProfile,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['portal', 'profile'] }),
+  });
+}
+
+export function usePortalDocuments() {
+  return useQuery({ queryKey: ['portal', 'documents'], queryFn: portalApi.documents });
+}
+
+export function useUploadPortalDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: portalApi.uploadDocument,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['portal', 'documents'] }),
+  });
+}
+
+export function useDeletePortalDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: portalApi.deleteDocument,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['portal', 'documents'] }),
+  });
+}
