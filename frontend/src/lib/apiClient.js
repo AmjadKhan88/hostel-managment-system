@@ -64,12 +64,13 @@ apiClient.interceptors.response.use(
         } catch (refreshError) {
           residentPendingQueue = resolveQueue(residentPendingQueue, refreshError);
           useResidentAuthStore.getState().clearResident();
-          if (
-            typeof window !== 'undefined' &&
-            !window.location.pathname.startsWith('/portal/login')
-          ) {
-            window.location.assign('/portal/login');
-          }
+          // if (
+          //   typeof window !== 'undefined' &&
+          //   !window.location.pathname.startsWith('/portal/login')
+          // )
+          // {
+          //   window.location.assign('/portal/login');
+          // }
           return Promise.reject(normalizeError(refreshError));
         } finally {
           isRefreshingResident = false;
@@ -90,9 +91,9 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         staffPendingQueue = resolveQueue(staffPendingQueue, refreshError);
         useAuthStore.getState().clearUser();
-        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-          window.location.assign('/login');
-        }
+        // if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        //   window.location.assign('/login');
+        // }
         return Promise.reject(normalizeError(refreshError));
       } finally {
         isRefreshingStaff = false;
