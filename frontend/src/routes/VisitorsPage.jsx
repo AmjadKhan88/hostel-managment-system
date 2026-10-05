@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { UserPlus2, LogOut } from 'lucide-react';
+import { UserPlus2, LogIn, LogOut } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import DataTable from '@/components/ui/DataTable.jsx';
+import StatusBadge from '@/components/ui/StatusBadge.jsx';
 import EmptyState from '@/components/ui/EmptyState.jsx';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.jsx';
 import { useAuthStore } from '@/store/authStore';
 import { useHostelStore } from '@/store/hostelStore';
-import { useVisitors, useCheckOutVisitor } from '@/features/visitors/hooks/useVisitors';
+import { useVisitors, useCheckInExpectedVisitor, useCheckOutVisitor } from '@/features/visitors/hooks/useVisitors';
 import VisitorCheckInModal from '@/features/visitors/components/VisitorCheckInModal.jsx';
 
 export default function VisitorsPage() {
@@ -27,6 +28,7 @@ export default function VisitorsPage() {
     status: status || undefined,
     search: search || undefined,
   });
+  const checkInExpected = useCheckInExpectedVisitor();
   const checkOut = useCheckOutVisitor();
 
   const visitors = data?.data?.items ?? [];
@@ -51,33 +53,44 @@ export default function VisitorsPage() {
     { key: 'phone', header: 'Phone' },
     { key: 'resident', header: 'Visiting', render: (row) => row.residentId?.name ?? '—' },
     { key: 'purpose', header: 'Purpose', render: (row) => row.purpose || '—' },
-    { key: 'checkInAt', header: 'Checked in', render: (row) => new Date(row.checkInAt).toLocaleString() },
     {
-      key: 'status',
-      header: 'Status',
+      key: 'checkInAt',
+      header: 'Checked in',
       render: (row) =>
-        row.checkOutAt ? (
-          <span className="text-xs text-ink-subtle">
-            Checked out {new Date(row.checkOutAt).toLocaleTimeString()}
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 rounded-pill bg-success-bg px-2.5 py-1 text-xs font-medium text-success">
-            Inside
-          </span>
-        ),
+        row.checkInAt
+          ? new Date(row.checkInAt).toLocaleString()
+          : row.expectedAt
+            ? `Expected ${new Date(row.expectedAt).toLocaleString()}`
+            : 'Not yet arrived',
     },
+    { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} /> },
     {
       key: 'actions',
       header: '',
-      render: (row) =>
-        !row.checkOutAt && (
-          <button
-            onClick={() => setCheckingOut(row)}
-            className="flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
-          >
-            <LogOut size={14} /> Check out
-          </button>
-        ),
+      render: (row) => {
+        if (row.status === 'expected') {
+          return (
+            <button
+              onClick={() => checkInExpected.mutate(row._id)}
+              disabled={checkInExpected.isPending}
+              className="flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700 disabled:opacity-50"
+            >
+              <LogIn size={14} /> Check in
+            </button>
+          );
+        }
+        if (row.status === 'inside') {
+          return (
+            <button
+              onClick={() => setCheckingOut(row)}
+              className="flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
+            >
+              <LogOut size={14} /> Check out
+            </button>
+          );
+        }
+        return null;
+      },
     },
   ];
 
@@ -85,7 +98,7 @@ export default function VisitorsPage() {
     <div className="mx-auto max-w-6xl">
       <PageHeader
         title="Visitors"
-        description="Gate log — who's currently on site and visit history."
+        description="Gate log — pre-registered, currently inside, and visit history."
         action={
           <button
             onClick={() => setModalOpen(true)}
@@ -114,6 +127,7 @@ export default function VisitorsPage() {
           }}
           className="rounded-control border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand-500"
         >
+          <option value="expected">Expected (pre-registered)</option>
           <option value="inside">Currently inside</option>
           <option value="checked_out">Checked out</option>
           <option value="">All</option>

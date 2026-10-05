@@ -18,6 +18,7 @@ const STATUS_STYLES = {
   partially_paid: 'bg-warning-bg text-warning',
   paid: 'bg-success-bg text-success',
   void: 'bg-canvas text-ink-subtle',
+  expected: 'bg-brand-50 text-brand-700',
 };
 
 export default function StatusBadge({ status }) {

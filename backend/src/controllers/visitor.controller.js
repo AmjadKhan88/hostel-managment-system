@@ -7,6 +7,11 @@ export const checkInVisitor = asyncHandler(async (req, res) => {
   new ApiResponse(201, { visitor }, 'Visitor checked in successfully').send(res);
 });
 
+export const checkInExpectedVisitor = asyncHandler(async (req, res) => {
+  const visitor = await visitorService.checkInExpectedVisitor(req.user, req.params.id);
+  new ApiResponse(200, { visitor }, 'Visitor checked in successfully').send(res);
+});
+
 export const checkOutVisitor = asyncHandler(async (req, res) => {
   const visitor = await visitorService.checkOutVisitor(req.user, req.params.id);
   new ApiResponse(200, { visitor }, 'Visitor checked out successfully').send(res);

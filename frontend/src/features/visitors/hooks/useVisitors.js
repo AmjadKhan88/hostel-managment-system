@@ -25,3 +25,11 @@ export function useCheckOutVisitor() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['visitors'] }),
   });
 }
+
+export function useCheckInExpectedVisitor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => visitorsApi.checkInExpected(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['visitors'] }),
+  });
+}

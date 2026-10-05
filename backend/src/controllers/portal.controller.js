@@ -61,3 +61,33 @@ export const deleteMyDocument = asyncHandler(async (req, res) => {
   await portalService.deleteMyDocument(req.resident, req.params.id);
   new ApiResponse(200, null, 'Document deleted successfully').send(res);
 });
+
+export const listMyMaintenanceTickets = asyncHandler(async (req, res) => {
+  const result = await portalService.listMyMaintenanceTickets(req.resident, req.query);
+  new ApiResponse(200, result, 'Maintenance requests fetched successfully').send(res);
+});
+
+export const getMyMaintenanceTicket = asyncHandler(async (req, res) => {
+  const ticket = await portalService.getMyMaintenanceTicketById(req.resident, req.params.id);
+  new ApiResponse(200, { ticket }, 'Maintenance request fetched successfully').send(res);
+});
+
+export const submitMaintenanceRequest = asyncHandler(async (req, res) => {
+  const ticket = await portalService.submitMyMaintenanceRequest(req.resident, req.body);
+  new ApiResponse(201, { ticket }, 'Maintenance request submitted successfully').send(res);
+});
+
+export const listMyVisitors = asyncHandler(async (req, res) => {
+  const result = await portalService.listMyVisitorPreRegistrations(req.resident, req.query);
+  new ApiResponse(200, result, 'Visitors fetched successfully').send(res);
+});
+
+export const preRegisterVisitor = asyncHandler(async (req, res) => {
+  const visitor = await portalService.preRegisterMyVisitor(req.resident, req.body);
+  new ApiResponse(201, { visitor }, 'Visitor pre-registered successfully').send(res);
+});
+
+export const cancelVisitor = asyncHandler(async (req, res) => {
+  const visitor = await portalService.cancelMyVisitorPreRegistration(req.resident, req.params.id);
+  new ApiResponse(200, { visitor }, 'Pre-registration cancelled').send(res);
+});

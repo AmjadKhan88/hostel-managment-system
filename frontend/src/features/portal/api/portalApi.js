@@ -13,4 +13,10 @@ export const portalApi = {
   documents: () => apiClient.get('/portal/documents'),
   uploadDocument: (formData) => apiClient.post('/portal/documents', formData),
   deleteDocument: (id) => apiClient.delete(`/portal/documents/${id}`),
+  maintenanceTickets: (params) => apiClient.get('/portal/maintenance', { params }),
+  maintenanceTicket: (id) => apiClient.get(`/portal/maintenance/${id}`),
+  submitMaintenanceRequest: (data) => apiClient.post('/portal/maintenance', data),
+  myVisitors: (params) => apiClient.get('/portal/visitors', { params }),
+  preRegisterVisitor: (data) => apiClient.post('/portal/visitors', data),
+  cancelVisitor: (id) => apiClient.post(`/portal/visitors/${id}/cancel`),
 };

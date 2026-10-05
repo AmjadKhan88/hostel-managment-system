@@ -10,7 +10,8 @@ import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js'
 import { emitToHostel } from '../events/socketEvents.js';
 import { recordAuditLog } from './audit.service.js';
 import { uploadBufferToCloudinary, cloudinary } from '../config/cloudinary.js';
-
+import { MaintenanceTicket } from '../models/MaintenanceTicket.model.js';
+import { Visitor } from '../models/Visitor.model.js';
 // ---- Invoices ----
 
 export async function listMyInvoices(residentAuth, query) {
@@ -225,4 +226,130 @@ export async function deleteMyDocument(residentAuth, documentId) {
 
   await cloudinary.uploader.destroy(doc.publicId).catch(() => {});
   await doc.deleteOne();
+}
+
+// ---- Maintenance requests ----
+
+export async function listMyMaintenanceTickets(residentAuth, query) {
+  const { page, limit, skip } = parsePagination(query);
+  const filter = { hostelId: residentAuth.hostelId, residentId: residentAuth.id };
+  if (query.status) filter.status = query.status;
+
+  const [items, total] = await Promise.all([
+    MaintenanceTicket.find(filter)
+      .populate('assignedTo', 'name')
+      .populate('roomId', 'roomNumber')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    MaintenanceTicket.countDocuments(filter),
+  ]);
+  return buildPaginatedResponse({ items, total, page, limit });
+}
+
+export async function getMyMaintenanceTicketById(residentAuth, ticketId) {
+  const ticket = await MaintenanceTicket.findOne({
+    _id: ticketId,
+    hostelId: residentAuth.hostelId,
+    residentId: residentAuth.id,
+  })
+    .populate('assignedTo', 'name')
+    .populate('roomId', 'roomNumber');
+  if (!ticket) throw ApiError.notFound('Maintenance request not found');
+  return ticket;
+}
+
+/**
+ * A maintenance ticket is always tied to a room (required on the model) —
+ * resolved from the resident's current bed, same lookup pattern as
+ * submitMyComplaint. Unlike a complaint, there's no sensible "no room"
+ * fallback here, so a resident with no current bed is told plainly why
+ * they can't submit one, rather than silently failing or guessing a room.
+ */
+export async function submitMyMaintenanceRequest(residentAuth, data) {
+  const resident = await Resident.findById(residentAuth.id);
+  if (!resident) throw ApiError.notFound('Resident not found');
+  if (!resident.currentBedId) {
+    throw ApiError.badRequest(
+      'You need an assigned room to submit a maintenance request — contact staff'
+    );
+  }
+
+  const bed = await Bed.findById(resident.currentBedId).select('roomId');
+  if (!bed) throw ApiError.badRequest('Your assigned bed could not be found — contact staff');
+
+  const ticket = await MaintenanceTicket.create({
+    hostelId: residentAuth.hostelId,
+    roomId: bed.roomId,
+    residentId: residentAuth.id,
+    raisedBy: null,
+    title: data.title,
+    description: data.description,
+    category: data.category,
+  });
+
+  emitToHostel(residentAuth.hostelId, 'maintenance:created', {
+    ticketId: ticket._id,
+    title: ticket.title,
+  });
+
+  recordAuditLog({
+    hostelId: residentAuth.hostelId,
+    actorId: null,
+    actorName: resident.name,
+    action: 'maintenance.created',
+    entityType: 'MaintenanceTicket',
+    entityId: ticket._id,
+    metadata: { title: ticket.title, submittedByResident: true },
+  });
+
+  return ticket;
+}
+
+// ---- Visitor pre-registration ----
+
+export async function listMyVisitorPreRegistrations(residentAuth, query) {
+  const { page, limit, skip } = parsePagination(query);
+  const filter = { hostelId: residentAuth.hostelId, residentId: residentAuth.id };
+  if (query.status) filter.status = query.status;
+
+  const [items, total] = await Promise.all([
+    Visitor.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Visitor.countDocuments(filter),
+  ]);
+  return buildPaginatedResponse({ items, total, page, limit });
+}
+
+export async function preRegisterMyVisitor(residentAuth, data) {
+  const visitor = await Visitor.create({
+    hostelId: residentAuth.hostelId,
+    residentId: residentAuth.id,
+    visitorName: data.visitorName,
+    phone: data.phone,
+    purpose: data.purpose,
+    status: 'expected',
+    expectedAt: data.expectedAt,
+    registeredBy: null,
+  });
+
+  return visitor;
+}
+
+/** A resident can cancel their own pre-registration before the visitor arrives. */
+export async function cancelMyVisitorPreRegistration(residentAuth, visitorId) {
+  const visitor = await Visitor.findOne({
+    _id: visitorId,
+    hostelId: residentAuth.hostelId,
+    residentId: residentAuth.id,
+  });
+  if (!visitor) throw ApiError.notFound('Visitor record not found');
+  if (visitor.status !== 'expected') {
+    throw ApiError.conflict(
+      `Only an expected (not-yet-arrived) visitor can be cancelled (current status: ${visitor.status})`
+    );
+  }
+
+  visitor.status = 'cancelled';
+  await visitor.save();
+  return visitor;
 }

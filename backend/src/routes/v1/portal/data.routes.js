@@ -6,6 +6,8 @@ import {
   submitComplaintSchema,
   updateMyProfileSchema,
   uploadMyDocumentSchema,
+  submitMaintenanceRequestSchema,
+  preRegisterVisitorSchema,
 } from '../../../validators/portal.validator.js';
 import * as portalController from '../../../controllers/portal.controller.js';
 
@@ -28,6 +30,14 @@ router.post(
 
 router.get('/notices', portalController.listMyNotices);
 
+router.get('/maintenance', portalController.listMyMaintenanceTickets);
+router.get('/maintenance/:id', portalController.getMyMaintenanceTicket);
+router.post(
+  '/maintenance',
+  validate({ body: submitMaintenanceRequestSchema }),
+  portalController.submitMaintenanceRequest
+);
+
 router.get('/profile', portalController.getMyProfile);
 router.patch(
   '/profile',
@@ -43,5 +53,13 @@ router.post(
   portalController.uploadMyDocument
 );
 router.delete('/documents/:id', portalController.deleteMyDocument);
+
+router.get('/visitors', portalController.listMyVisitors);
+router.post(
+  '/visitors',
+  validate({ body: preRegisterVisitorSchema }),
+  portalController.preRegisterVisitor
+);
+router.post('/visitors/:id/cancel', portalController.cancelVisitor);
 
 export default router;

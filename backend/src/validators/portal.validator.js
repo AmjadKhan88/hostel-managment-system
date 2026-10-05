@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { COMPLAINT_CATEGORIES, COMPLAINT_PRIORITIES } from '../models/Complaint.model.js';
 import { DOCUMENT_TYPES } from '../models/Document.model.js';
+import { MAINTENANCE_CATEGORIES } from '../models/MaintenanceTicket.model.js';
 
 export const submitComplaintSchema = z.object({
   subject: z.string().min(3).max(160),
@@ -26,4 +27,17 @@ export const updateMyProfileSchema = z.object({
 
 export const uploadMyDocumentSchema = z.object({
   fileType: z.enum(DOCUMENT_TYPES).optional(),
+});
+
+export const submitMaintenanceRequestSchema = z.object({
+  title: z.string().min(3).max(160),
+  description: z.string().min(5).max(3000),
+  category: z.enum(MAINTENANCE_CATEGORIES),
+});
+
+export const preRegisterVisitorSchema = z.object({
+  visitorName: z.string().min(2, "Visitor's name is required"),
+  phone: z.string().min(6, 'Phone is required'),
+  purpose: z.string().max(300).optional(),
+  expectedAt: z.coerce.date().optional(),
 });

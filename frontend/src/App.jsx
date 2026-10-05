@@ -44,6 +44,10 @@ import PortalComplaintDetailPage from '@/routes/portal/PortalComplaintDetailPage
 import PortalNoticesPage from '@/routes/portal/PortalNoticesPage.jsx';
 import PortalProfilePage from '@/routes/portal/PortalProfilePage.jsx';
 
+import PortalMaintenancePage from '@/routes/portal/PortalMaintenancePage.jsx';
+import PortalMaintenanceDetailPage from '@/routes/portal/PortalMaintenanceDetailPage.jsx';
+import PortalVisitorsPage from '@/routes/portal/PortalVisitorsPage.jsx';
+
 export default function App() {
   useSessionHydration();
   useRealtimeNotifications();
@@ -95,6 +99,9 @@ export default function App() {
             <Route path="/portal/complaints/:complaintId" element={<PortalComplaintDetailPage />} />
             <Route path="/portal/notices" element={<PortalNoticesPage />} />
             <Route path="/portal/profile" element={<PortalProfilePage />} />
+            <Route path="/portal/maintenance" element={<PortalMaintenancePage />} />
+            <Route path="/portal/maintenance/:ticketId" element={<PortalMaintenanceDetailPage />} />
+            <Route path="/portal/visitors" element={<PortalVisitorsPage />} />
           </Route>
         </Route>
 

@@ -17,6 +17,15 @@ router.post(
   visitorController.checkInVisitor
 );
 router.get('/', authorize(PERMISSIONS.VISITORS_MANAGE), visitorController.listVisitors);
-router.post('/:id/checkout', authorize(PERMISSIONS.VISITORS_MANAGE), visitorController.checkOutVisitor);
+router.post(
+  '/:id/checkout',
+  authorize(PERMISSIONS.VISITORS_MANAGE),
+  visitorController.checkOutVisitor
+);
+router.post(
+  '/:id/checkin',
+  authorize(PERMISSIONS.VISITORS_MANAGE),
+  visitorController.checkInExpectedVisitor
+);
 
 export default router;

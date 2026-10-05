@@ -84,3 +84,49 @@ export function useDeletePortalDocument() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['portal', 'documents'] }),
   });
 }
+
+export function usePortalMaintenanceTickets(params) {
+  return useQuery({
+    queryKey: ['portal', 'maintenance', params],
+    queryFn: () => portalApi.maintenanceTickets(params),
+  });
+}
+
+export function usePortalMaintenanceTicket(id) {
+  return useQuery({
+    queryKey: ['portal', 'maintenance', id],
+    queryFn: () => portalApi.maintenanceTicket(id),
+    enabled: Boolean(id),
+  });
+}
+
+export function useSubmitMaintenanceRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: portalApi.submitMaintenanceRequest,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['portal', 'maintenance'] }),
+  });
+}
+
+export function usePortalVisitors(params) {
+  return useQuery({
+    queryKey: ['portal', 'visitors', params],
+    queryFn: () => portalApi.myVisitors(params),
+  });
+}
+
+export function usePreRegisterVisitor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: portalApi.preRegisterVisitor,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['portal', 'visitors'] }),
+  });
+}
+
+export function useCancelPortalVisitor() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: portalApi.cancelVisitor,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['portal', 'visitors'] }),
+  });
+}

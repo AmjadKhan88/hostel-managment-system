@@ -1,6 +1,13 @@
 import mongoose from 'mongoose';
 
-export const MAINTENANCE_CATEGORIES = ['plumbing', 'electrical', 'carpentry', 'painting', 'appliance', 'other'];
+export const MAINTENANCE_CATEGORIES = [
+  'plumbing',
+  'electrical',
+  'carpentry',
+  'painting',
+  'appliance',
+  'other',
+];
 export const MAINTENANCE_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 export const MAINTENANCE_STATUSES = ['open', 'in_progress', 'resolved', 'closed'];
 
@@ -15,7 +22,13 @@ const maintenanceTicketSchema = new mongoose.Schema(
     priority: { type: String, enum: MAINTENANCE_PRIORITIES, default: 'medium' },
     status: { type: String, enum: MAINTENANCE_STATUSES, default: 'open' },
 
-    raisedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    raisedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    residentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Resident',
+      default: null,
+      index: true,
+    },
     assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 
     scheduledDate: { type: Date, default: null },
