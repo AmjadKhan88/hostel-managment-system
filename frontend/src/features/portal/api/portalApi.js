@@ -19,4 +19,7 @@ export const portalApi = {
   myVisitors: (params) => apiClient.get('/portal/visitors', { params }),
   preRegisterVisitor: (data) => apiClient.post('/portal/visitors', data),
   cancelVisitor: (id) => apiClient.post(`/portal/visitors/${id}/cancel`),
+  paymentMethods: () => apiClient.get('/portal/payment-methods'),
+  paymentSubmissions: (params) => apiClient.get('/portal/payment-submissions', { params }),
+  submitPaymentProof: (formData) => apiClient.post('/portal/payment-submissions', formData),
 };

@@ -27,6 +27,7 @@ import AuditLogPage from '@/routes/AuditLogPage.jsx';
 import AIAssistantPage from '@/routes/AIAssistantPage.jsx';
 import FinancePage from '@/routes/FinancePage.jsx';
 import AutomationPage from '@/routes/AutomationPage.jsx';
+import PaymentApprovalsPage from '@/routes/PaymentApprovalsPage.jsx';
 
 import { useResidentSessionHydration } from '@/features/portalAuth/hooks/useResidentSessionHydration';
 import PortalLoginPage from '@/routes/portal/PortalLoginPage.jsx';
@@ -47,6 +48,7 @@ import PortalProfilePage from '@/routes/portal/PortalProfilePage.jsx';
 import PortalMaintenancePage from '@/routes/portal/PortalMaintenancePage.jsx';
 import PortalMaintenanceDetailPage from '@/routes/portal/PortalMaintenanceDetailPage.jsx';
 import PortalVisitorsPage from '@/routes/portal/PortalVisitorsPage.jsx';
+
 
 export default function App() {
   useSessionHydration();
@@ -80,6 +82,7 @@ export default function App() {
             <Route path="/finance" element={<FinancePage />} />
             <Route path="/audit-log" element={<AuditLogPage />} />
             <Route path="/automation" element={<AutomationPage />} />
+            <Route path="/payment-approvals" element={<PaymentApprovalsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>

@@ -130,3 +130,26 @@ export function useCancelPortalVisitor() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['portal', 'visitors'] }),
   });
 }
+
+export function usePaymentMethods() {
+  return useQuery({ queryKey: ['portal', 'payment-methods'], queryFn: portalApi.paymentMethods });
+}
+
+export function usePaymentSubmissions(invoiceId) {
+  return useQuery({
+    queryKey: ['portal', 'payment-submissions', invoiceId],
+    queryFn: () => portalApi.paymentSubmissions({ invoiceId }),
+    enabled: Boolean(invoiceId),
+  });
+}
+
+export function useSubmitPaymentProof() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: portalApi.submitPaymentProof,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['portal', 'payment-submissions'] });
+      queryClient.invalidateQueries({ queryKey: ['portal', 'invoices'] });
+    },
+  });
+}

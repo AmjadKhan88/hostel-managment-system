@@ -1,14 +1,21 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CreditCard } from 'lucide-react';
 import StatusBadge from '@/components/ui/StatusBadge.jsx';
 import { formatMoney } from '@/lib/money';
-import { usePortalInvoice } from '@/features/portal/hooks/usePortalData';
+import { usePortalInvoice, usePaymentSubmissions } from '@/features/portal/hooks/usePortalData';
+import { useState } from 'react';
+import PayInvoiceModal from '@/features/portal/components/PayInvoiceModal.jsx';
 
 export default function PortalInvoiceDetailPage() {
   const { invoiceId } = useParams();
   const navigate = useNavigate();
   const { data, isLoading, isError, error } = usePortalInvoice(invoiceId);
   const invoice = data?.data?.invoice;
+
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const { data: submissionsData } = usePaymentSubmissions(invoiceId);
+  const submissions = submissionsData?.data?.items ?? [];
+  const hasPending = submissions.some((s) => s.status === 'pending');
 
   if (isLoading) return <p className="text-sm text-ink-muted">Loading invoice…</p>;
   if (isError) {
@@ -32,7 +39,18 @@ export default function PortalInvoiceDetailPage() {
 
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-ink">{invoice.invoiceNumber}</h1>
-        <StatusBadge status={invoice.status} />
+        <div className="flex items-center gap-2">
+          <StatusBadge status={invoice.status} />
+          {balance > 0 && invoice.status !== 'void' && (
+            <button
+              onClick={() => setPayModalOpen(true)}
+              disabled={hasPending}
+              className="flex items-center gap-1.5 rounded-control bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <CreditCard size={14} /> {hasPending ? 'Submission pending review' : 'Pay'}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="surface-card p-6">
@@ -64,6 +82,36 @@ export default function PortalInvoiceDetailPage() {
           </div>
         </div>
       </div>
+
+      {submissions.length > 0 && (
+        <div className="surface-card mt-4 p-6">
+          <h2 className="mb-3 text-sm font-semibold text-ink">Payment Submissions</h2>
+          <ul className="space-y-2">
+            {submissions.map((s) => (
+              <li key={s._id} className="rounded-control border border-border p-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-ink">{formatMoney(s.amountMinorUnits)}</span>
+                  <span
+                    className={
+                      s.status === 'approved'
+                        ? 'text-success'
+                        : s.status === 'rejected'
+                          ? 'text-danger'
+                          : 'text-ink-subtle'
+                    }
+                  >
+                    {s.status}
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs text-ink-subtle">{new Date(s.createdAt).toLocaleString()}</p>
+                {s.status === 'rejected' && <p className="mt-1 text-xs text-danger">Reason: {s.rejectionReason}</p>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <PayInvoiceModal open={payModalOpen} onClose={() => setPayModalOpen(false)} invoice={invoice} />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   useUpdateHostelSettings,
   useUploadHostelLogo,
 } from '@/features/settings/hooks/useHostelSettings';
+import PaymentMethodsSection from '@/features/settings/components/PaymentMethodsSection.jsx';
 
 const schema = z.object({
   name: z.string().min(2, 'Name is required'),
@@ -217,6 +218,10 @@ export default function SettingsPage() {
           {updateSettings.isPending ? 'Saving…' : 'Save settings'}
         </button>
       </form>
+
+      <div className="mt-4">
+        <PaymentMethodsSection hostelId={effectiveHostelId} paymentMethods={hostel.paymentMethods} />
+      </div>
     </div>
   );
 }

@@ -15,6 +15,7 @@ import {
   Sparkles,
   TrendingUp,
   Activity,
+  ShieldCheck,
 } from 'lucide-react';
 
 /**
@@ -49,6 +50,12 @@ export const navSections = [
     items: [
       { label: 'Fees & Payments', icon: Wallet, path: '/fees', permission: 'payments.read' },
       { label: 'Finances', icon: TrendingUp, path: '/finance', permission: 'payments.read' },
+      {
+        label: 'Payment Approvals',
+        icon: ShieldCheck,
+        path: '/payment-approvals',
+        permission: 'payments.manage',
+      },
     ],
   },
   {
