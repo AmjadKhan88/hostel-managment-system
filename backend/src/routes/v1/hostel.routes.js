@@ -3,7 +3,12 @@ import { authenticate } from '../../middlewares/authenticate.js';
 import { authorize } from '../../middlewares/authorize.js';
 import { validate } from '../../middlewares/validate.js';
 import { upload } from '../../middlewares/upload.js';
-import { createHostelSchema, updateHostelSchema } from '../../validators/hostel.validator.js';
+import {
+  createHostelSchema,
+  updateHostelSchema,
+  createPaymentMethodSchema,
+  updatePaymentMethodSchema,
+} from '../../validators/hostel.validator.js';
 import { PERMISSIONS } from '../../constants/permissions.js';
 import * as hostelController from '../../controllers/hostel.controller.js';
 
@@ -29,6 +34,29 @@ router.patch(
   validate({ body: updateHostelSchema }),
   hostelController.updateHostel
 );
-router.post('/:id/logo', authorize(PERMISSIONS.SETTINGS_MANAGE), upload.single('file'), hostelController.uploadLogo);
+router.post(
+  '/:id/logo',
+  authorize(PERMISSIONS.SETTINGS_MANAGE),
+  upload.single('file'),
+  hostelController.uploadLogo
+);
+
+router.post(
+  '/:id/payment-methods',
+  authorize(PERMISSIONS.SETTINGS_MANAGE),
+  validate({ body: createPaymentMethodSchema }),
+  hostelController.addPaymentMethod
+);
+router.patch(
+  '/:id/payment-methods/:methodId',
+  authorize(PERMISSIONS.SETTINGS_MANAGE),
+  validate({ body: updatePaymentMethodSchema }),
+  hostelController.updatePaymentMethod
+);
+router.delete(
+  '/:id/payment-methods/:methodId',
+  authorize(PERMISSIONS.SETTINGS_MANAGE),
+  hostelController.removePaymentMethod
+);
 
 export default router;

@@ -91,3 +91,18 @@ export const cancelVisitor = asyncHandler(async (req, res) => {
   const visitor = await portalService.cancelMyVisitorPreRegistration(req.resident, req.params.id);
   new ApiResponse(200, { visitor }, 'Pre-registration cancelled').send(res);
 });
+
+export const getMyPaymentMethods = asyncHandler(async (req, res) => {
+  const result = await portalService.getMyHostelPaymentMethods(req.resident);
+  new ApiResponse(200, result, 'Payment methods fetched successfully').send(res);
+});
+
+export const submitPaymentProof = asyncHandler(async (req, res) => {
+  const submission = await portalService.submitMyPaymentProof(req.resident, req.body, req.file);
+  new ApiResponse(201, { submission }, 'Payment submitted for review').send(res);
+});
+
+export const listMyPaymentSubmissions = asyncHandler(async (req, res) => {
+  const result = await portalService.listMyPaymentSubmissions(req.resident, req.query);
+  new ApiResponse(200, result, 'Payment submissions fetched successfully').send(res);
+});

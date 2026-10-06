@@ -27,6 +27,7 @@ import aiAssistantRoutes from './aiAssistant.routes.js';
 import expenseRoutes from './expense.routes.js';
 import financeRoutes from './finance.routes.js';
 import portalRoutes from './portal/index.js';
+import paymentSubmissionRoutes from './paymentSubmission.routes.js';
 
 const router = Router();
 
@@ -72,6 +73,7 @@ router.use('/expenses', expenseRoutes);
 router.use('/finance', financeRoutes);
 
 router.use('/portal', portalRoutes);
+router.use('/payment-submissions', paymentSubmissionRoutes);
 
 // Further module routers (settings, ...) are mounted here as each is
 // implemented on its own scoped day.

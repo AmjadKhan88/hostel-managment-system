@@ -9,6 +9,7 @@ import {
   submitMaintenanceRequestSchema,
   preRegisterVisitorSchema,
 } from '../../../validators/portal.validator.js';
+import { createPaymentSubmissionSchema } from '../../../validators/paymentSubmission.validator.js';
 import * as portalController from '../../../controllers/portal.controller.js';
 
 const router = Router();
@@ -61,5 +62,15 @@ router.post(
   portalController.preRegisterVisitor
 );
 router.post('/visitors/:id/cancel', portalController.cancelVisitor);
+
+router.get('/payment-methods', portalController.getMyPaymentMethods);
+
+router.get('/payment-submissions', portalController.listMyPaymentSubmissions);
+router.post(
+  '/payment-submissions',
+  upload.single('screenshot'),
+  validate({ body: createPaymentSubmissionSchema }),
+  portalController.submitPaymentProof
+);
 
 export default router;

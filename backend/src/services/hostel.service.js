@@ -106,3 +106,49 @@ export async function uploadHostelLogo(user, id, file) {
 
   return hostel;
 }
+
+export async function addPaymentMethod(user, hostelId, data) {
+  assertCanAccessHostel(user, hostelId);
+  const hostel = await Hostel.findById(hostelId);
+  if (!hostel) throw ApiError.notFound('Hostel not found');
+
+  hostel.paymentMethods.push(data);
+  await hostel.save();
+
+  recordAuditLog({
+    hostelId,
+    actorId: user.id,
+    action: 'settings.updated',
+    entityType: 'Hostel',
+    entityId: hostel._id,
+    metadata: { change: 'payment_method_added', label: data.label },
+  });
+
+  return hostel;
+}
+
+export async function updatePaymentMethod(user, hostelId, methodId, data) {
+  assertCanAccessHostel(user, hostelId);
+  const hostel = await Hostel.findById(hostelId);
+  if (!hostel) throw ApiError.notFound('Hostel not found');
+
+  const method = hostel.paymentMethods.id(methodId);
+  if (!method) throw ApiError.notFound('Payment method not found');
+
+  Object.assign(method, data);
+  await hostel.save();
+  return hostel;
+}
+
+export async function removePaymentMethod(user, hostelId, methodId) {
+  assertCanAccessHostel(user, hostelId);
+  const hostel = await Hostel.findById(hostelId);
+  if (!hostel) throw ApiError.notFound('Hostel not found');
+
+  const method = hostel.paymentMethods.id(methodId);
+  if (!method) throw ApiError.notFound('Payment method not found');
+
+  method.deleteOne();
+  await hostel.save();
+  return hostel;
+}

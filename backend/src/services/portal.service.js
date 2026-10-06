@@ -12,6 +12,8 @@ import { recordAuditLog } from './audit.service.js';
 import { uploadBufferToCloudinary, cloudinary } from '../config/cloudinary.js';
 import { MaintenanceTicket } from '../models/MaintenanceTicket.model.js';
 import { Visitor } from '../models/Visitor.model.js';
+import { Hostel } from '../models/Hostel.model.js';
+import * as paymentSubmissionService from './paymentSubmission.service.js';
 // ---- Invoices ----
 
 export async function listMyInvoices(residentAuth, query) {
@@ -352,4 +354,25 @@ export async function cancelMyVisitorPreRegistration(residentAuth, visitorId) {
   visitor.status = 'cancelled';
   await visitor.save();
   return visitor;
+}
+
+// ---- Payment methods (for display when paying) ----
+
+export async function getMyHostelPaymentMethods(residentAuth) {
+  const hostel = await Hostel.findById(residentAuth.hostelId).select('paymentMethods currency');
+  if (!hostel) throw ApiError.notFound('Hostel not found');
+  return {
+    currency: hostel.currency,
+    paymentMethods: hostel.paymentMethods.filter((m) => m.isActive),
+  };
+}
+
+// ---- Payment submissions (manual payment proof) ----
+
+export function submitMyPaymentProof(residentAuth, body, file) {
+  return paymentSubmissionService.createSubmission(residentAuth, body, file);
+}
+
+export function listMyPaymentSubmissions(residentAuth, query) {
+  return paymentSubmissionService.listMySubmissions(residentAuth, query);
 }

@@ -1,13 +1,31 @@
 import mongoose from 'mongoose';
 
-export const PAYMENT_METHODS = ['cash', 'bank_transfer', 'card', 'mobile_wallet', 'other'];
+export const PAYMENT_METHODS = [
+  'cash',
+  'bank_transfer',
+  'card',
+  'mobile_wallet',
+  'jazzcash',
+  'easypaisa',
+  'other',
+];
 export const PAYMENT_STATUSES = ['completed', 'refunded'];
 
 const paymentSchema = new mongoose.Schema(
   {
     hostelId: { type: mongoose.Schema.Types.ObjectId, ref: 'Hostel', required: true, index: true },
-    invoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice', required: true, index: true },
-    residentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Resident', required: true, index: true },
+    invoiceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Invoice',
+      required: true,
+      index: true,
+    },
+    residentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Resident',
+      required: true,
+      index: true,
+    },
 
     receiptNumber: { type: String, required: true, trim: true },
     amountMinorUnits: { type: Number, required: true, min: 1 },
