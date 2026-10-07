@@ -5,4 +5,5 @@ export const residentsApi = {
   getById: (id) => apiClient.get(`/residents/${id}`),
   create: (data) => apiClient.post('/residents', data),
   update: (id, data) => apiClient.patch(`/residents/${id}`, data),
+  invitePortal: (id) => apiClient.post(`/residents/${id}/portal-invite`),
 };

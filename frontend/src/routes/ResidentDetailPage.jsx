@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Pencil } from 'lucide-react';
+import { ArrowLeft, Pencil, Mail, CheckCircle2, Clock } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader.jsx';
 import StatusBadge from '@/components/ui/StatusBadge.jsx';
-import { useResident } from '@/features/residents/hooks/useResident';
+import { useResident, useInvitePortalAccount } from '@/features/residents/hooks/useResident';
 import ResidentFormModal from '@/features/residents/components/ResidentFormModal.jsx';
 import { useAllocationHistory } from '@/features/allocations/hooks/useAllocationHistory';
 import CurrentAllocationCard from '@/features/allocations/components/CurrentAllocationCard.jsx';
@@ -16,6 +16,8 @@ export default function ResidentDetailPage() {
   const { data, isLoading, isError, error } = useResident(residentId);
   const { data: historyData } = useAllocationHistory(residentId);
   const [editOpen, setEditOpen] = useState(false);
+
+  const invitePortal = useInvitePortalAccount(residentId);
 
   const resident = data?.data?.resident;
   const activeAllocation = (historyData?.data?.allocations ?? []).find((a) => a.status === 'active') ?? null;
@@ -74,6 +76,56 @@ export default function ResidentDetailPage() {
           </dl>
         </section>
       </div>
+
+      <section className="surface-card mt-4 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Resident Portal Access</h2>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-muted">
+              {resident.portalAccount?.status === 'active' && (
+                <>
+                  <CheckCircle2 size={14} className="text-success" />
+                  Active
+                  {resident.portalAccount.lastLoginAt &&
+                    ` — last signed in ${new Date(resident.portalAccount.lastLoginAt).toLocaleString()}`}
+                </>
+              )}
+              {resident.portalAccount?.status === 'invited' && (
+                <>
+                  <Clock size={14} className="text-warning" />
+                  Invited
+                  {resident.portalAccount.invitedAt && ` on ${new Date(resident.portalAccount.invitedAt).toLocaleDateString()}`}
+                  {' — waiting for them to set a password'}
+                </>
+              )}
+              {(!resident.portalAccount || resident.portalAccount.status === 'not_invited') && 'Not invited yet'}
+              {resident.portalAccount?.status === 'disabled' && 'Disabled'}
+            </p>
+          </div>
+
+          {resident.portalAccount?.status !== 'active' && (
+            <button
+              onClick={() => invitePortal.mutate()}
+              disabled={invitePortal.isPending || !resident.email}
+              className="flex items-center gap-1.5 rounded-control border border-border px-3 py-1.5 text-sm font-medium text-ink hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-50"
+              title={!resident.email ? 'Add an email address first' : undefined}
+            >
+              <Mail size={14} />
+              {invitePortal.isPending
+                ? 'Sending…'
+                : resident.portalAccount?.status === 'invited'
+                  ? 'Resend Invite'
+                  : 'Invite to Portal'}
+            </button>
+          )}
+        </div>
+
+        {!resident.email && (
+          <p className="mt-2 text-xs text-danger">This resident has no email on file — add one (Edit) before inviting them.</p>
+        )}
+        {invitePortal.isError && <p className="mt-2 text-xs text-danger">{invitePortal.error.message}</p>}
+        {invitePortal.isSuccess && <p className="mt-2 text-xs text-success">Invite sent to {resident.email}.</p>}
+      </section>
 
       <div className="mt-4">
         <CurrentAllocationCard resident={resident} hostelId={resident.hostelId} activeAllocation={activeAllocation} />
