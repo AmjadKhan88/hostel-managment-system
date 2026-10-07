@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { usePortalProfile, useUpdatePortalProfile } from '@/features/portal/hooks/usePortalData';
 import PortalDocumentsSection from '@/features/portal/components/PortalDocumentsSection.jsx';
+const inputClass =
+  'w-full rounded-control border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-brand-500';
 
 export default function PortalProfilePage() {
   const { data, isLoading } = usePortalProfile();

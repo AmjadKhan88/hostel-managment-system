@@ -48,7 +48,7 @@ import PortalProfilePage from '@/routes/portal/PortalProfilePage.jsx';
 import PortalMaintenancePage from '@/routes/portal/PortalMaintenancePage.jsx';
 import PortalMaintenanceDetailPage from '@/routes/portal/PortalMaintenanceDetailPage.jsx';
 import PortalVisitorsPage from '@/routes/portal/PortalVisitorsPage.jsx';
-
+import ErrorBoundary from '@/components/common/ErrorBoundary.jsx';
 
 export default function App() {
   useSessionHydration();
@@ -57,58 +57,61 @@ export default function App() {
 
   return (
     <>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route element={<ProtectedRoute />}>
-          <Route element={<AppShell />}>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/rooms" element={<RoomsPage />} />
-            <Route path="/rooms/:roomId" element={<RoomDetailPage />} />
-            <Route path="/residents" element={<ResidentsPage />} />
-            <Route path="/residents/:residentId" element={<ResidentDetailPage />} />
-            <Route path="/staff" element={<StaffPage />} />
-            <Route path="/complaints" element={<ComplaintsPage />} />
-            <Route path="/complaints/:complaintId" element={<ComplaintDetailPage />} />
-            <Route path="/visitors" element={<VisitorsPage />} />
-            <Route path="/maintenance" element={<MaintenancePage />} />
-            <Route path="/maintenance/:ticketId" element={<MaintenanceDetailPage />} />
-            <Route path="/notices" element={<NoticesPage />} />
-            <Route path="/admissions" element={<AdmissionsPage />} />
-            <Route path="/admissions/:admissionId" element={<AdmissionDetailPage />} />
-            <Route path="/fees" element={<FeesPage />} />
-            <Route path="/fees/invoices/:invoiceId" element={<InvoiceDetailPage />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/ai-assistant" element={<AIAssistantPage />} />
-            <Route path="/finance" element={<FinancePage />} />
-            <Route path="/audit-log" element={<AuditLogPage />} />
-            <Route path="/automation" element={<AutomationPage />} />
-            <Route path="/payment-approvals" element={<PaymentApprovalsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AppShell />}>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/rooms" element={<RoomsPage />} />
+              <Route path="/rooms/:roomId" element={<RoomDetailPage />} />
+              <Route path="/residents" element={<ResidentsPage />} />
+              <Route path="/residents/:residentId" element={<ResidentDetailPage />} />
+              <Route path="/staff" element={<StaffPage />} />
+              <Route path="/complaints" element={<ComplaintsPage />} />
+              <Route path="/complaints/:complaintId" element={<ComplaintDetailPage />} />
+              <Route path="/visitors" element={<VisitorsPage />} />
+              <Route path="/maintenance" element={<MaintenancePage />} />
+              <Route path="/maintenance/:ticketId" element={<MaintenanceDetailPage />} />
+              <Route path="/notices" element={<NoticesPage />} />
+              <Route path="/admissions" element={<AdmissionsPage />} />
+              <Route path="/admissions/:admissionId" element={<AdmissionDetailPage />} />
+              <Route path="/fees" element={<FeesPage />} />
+              <Route path="/fees/invoices/:invoiceId" element={<InvoiceDetailPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/ai-assistant" element={<AIAssistantPage />} />
+              <Route path="/finance" element={<FinancePage />} />
+              <Route path="/audit-log" element={<AuditLogPage />} />
+              <Route path="/automation" element={<AutomationPage />} />
+              <Route path="/payment-approvals" element={<PaymentApprovalsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+            </Route>
           </Route>
-        </Route>
 
-        {/* Resident Portal — completely separate auth/layout tree from staff */}
-        <Route path="/portal/login" element={<PortalLoginPage />} />
-        <Route path="/portal/set-password" element={<PortalSetupPasswordPage />} />
-        <Route path="/portal/forgot-password" element={<PortalForgotPasswordPage />} />
-        <Route path="/portal/reset-password" element={<PortalResetPasswordPage />} />
-        <Route element={<PortalProtectedRoute />}>
-          <Route element={<PortalLayout />}>
-            <Route path="/portal" element={<PortalDashboardPage />} />
-            <Route path="/portal/invoices" element={<PortalInvoicesPage />} />
-            <Route path="/portal/invoices/:invoiceId" element={<PortalInvoiceDetailPage />} />
-            <Route path="/portal/payments" element={<PortalPaymentsPage />} />
-            <Route path="/portal/complaints" element={<PortalComplaintsPage />} />
-            <Route path="/portal/complaints/:complaintId" element={<PortalComplaintDetailPage />} />
-            <Route path="/portal/notices" element={<PortalNoticesPage />} />
-            <Route path="/portal/profile" element={<PortalProfilePage />} />
-            <Route path="/portal/maintenance" element={<PortalMaintenancePage />} />
-            <Route path="/portal/maintenance/:ticketId" element={<PortalMaintenanceDetailPage />} />
-            <Route path="/portal/visitors" element={<PortalVisitorsPage />} />
+          {/* Resident Portal — completely separate auth/layout tree from staff */}
+          <Route path="/portal/login" element={<PortalLoginPage />} />
+          <Route path="/portal/set-password" element={<PortalSetupPasswordPage />} />
+          <Route path="/portal/forgot-password" element={<PortalForgotPasswordPage />} />
+          <Route path="/portal/reset-password" element={<PortalResetPasswordPage />} />
+          <Route element={<PortalProtectedRoute />}>
+            <Route element={<PortalLayout />}>
+              <Route path="/portal" element={<PortalDashboardPage />} />
+              <Route path="/portal/invoices" element={<PortalInvoicesPage />} />
+              <Route path="/portal/invoices/:invoiceId" element={<PortalInvoiceDetailPage />} />
+              <Route path="/portal/payments" element={<PortalPaymentsPage />} />
+              <Route path="/portal/complaints" element={<PortalComplaintsPage />} />
+              <Route path="/portal/complaints/:complaintId" element={<PortalComplaintDetailPage />} />
+              <Route path="/portal/notices" element={<PortalNoticesPage />} />
+              <Route path="/portal/profile" element={<PortalProfilePage />} />
+              <Route path="/portal/maintenance" element={<PortalMaintenancePage />} />
+              <Route path="/portal/maintenance/:ticketId" element={<PortalMaintenanceDetailPage />} />
+              <Route path="/portal/visitors" element={<PortalVisitorsPage />} />
+            </Route>
           </Route>
-        </Route>
 
-      </Routes>
+        </Routes>
+
+      </ErrorBoundary>
       <ToastContainer />
     </>
   );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { Menu, X, LogOut, Home, FileText, Wallet, MessageSquareWarning, Megaphone, User, Wrench, Contact, } from 'lucide-react';
+import { Menu, X, LogOut, Home, FileText, Wallet, MessageSquareWarning, Megaphone, User, Wrench, Contact } from 'lucide-react';
 import { useResidentAuthStore } from '@/store/residentAuthStore';
 import { usePortalLogout } from '@/features/portalAuth/hooks/usePortalAuth';
 
@@ -15,11 +15,7 @@ const NAV_ITEMS = [
   { label: 'Profile', icon: User, path: '/portal/profile' },
 ];
 
-export default function PortalLayout() {
-  const resident = useResidentAuthStore((s) => s.resident);
-  const { mutate: logout } = usePortalLogout();
-  const [mobileOpen, setMobileOpen] = useState(false);
-
+function SidebarContent({ resident, onLogout, onNavigate }) {
   const initials = resident?.name
     ?.split(' ')
     .map((n) => n[0])
@@ -28,78 +24,106 @@ export default function PortalLayout() {
     .toUpperCase();
 
   return (
-    <div className="min-h-screen bg-canvas">
-      <header className="sticky top-0 z-20 border-b border-border bg-surface">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-500 text-sm font-bold text-white">
-              H
-            </span>
-            <span className="hidden text-sm font-semibold text-ink sm:block">Resident Portal</span>
-          </div>
+    <div className="flex h-full flex-col">
+      <div className="flex items-center gap-2 px-5 py-5">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-brand-500 text-sm font-bold text-white">
+          H
+        </span>
+        <div className="leading-tight">
+          <p className="text-sm font-semibold text-ink">Resident</p>
+          <p className="text-sm font-semibold text-ink">Portal</p>
+        </div>
+      </div>
 
-          <nav className="hidden items-center gap-1 md:flex">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === '/portal'}
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 rounded-control px-3 py-2 text-sm font-medium transition ${isActive ? 'bg-brand-50 text-brand-700' : 'text-ink-muted hover:bg-canvas hover:text-ink'
-                  }`
-                }
-              >
-                <item.icon size={15} />
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3">
+        {NAV_ITEMS.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.path === '/portal'}
+            onClick={onNavigate}
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 rounded-control px-3 py-2.5 text-sm font-medium transition ${isActive ? 'bg-brand-50 text-brand-700' : 'text-ink-muted hover:bg-canvas hover:text-ink'
+              }`
+            }
+          >
+            <item.icon size={17} />
+            {item.label}
+          </NavLink>
+        ))}
+      </nav>
 
-          <div className="flex items-center gap-2">
-            <span className="hidden h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700 sm:flex">
-              {initials}
-            </span>
-            <button
-              onClick={() => logout()}
-              className="flex items-center gap-1.5 rounded-control px-3 py-2 text-sm font-medium text-ink-muted hover:bg-canvas hover:text-danger"
-            >
-              <LogOut size={15} />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
-            <button
-              onClick={() => setMobileOpen((o) => !o)}
-              className="rounded-control p-2 text-ink-muted hover:bg-canvas md:hidden"
-              aria-label="Toggle menu"
-            >
-              {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
+      <div className="border-t border-border p-3">
+        <div className="flex items-center gap-2.5 rounded-control px-2 py-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+            {initials}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-ink">{resident?.name}</p>
+            <p className="truncate text-xs text-ink-subtle">{resident?.email}</p>
           </div>
         </div>
+        <button
+          onClick={onLogout}
+          className="mt-1 flex w-full items-center gap-2.5 rounded-control px-3 py-2.5 text-sm font-medium text-ink-muted hover:bg-canvas hover:text-danger"
+        >
+          <LogOut size={17} /> Logout
+        </button>
+      </div>
+    </div>
+  );
+}
 
-        {mobileOpen && (
-          <nav className="border-t border-border px-4 py-2 md:hidden">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === '/portal'}
+export default function PortalLayout() {
+  const resident = useResidentAuthStore((s) => s.resident);
+  const { mutate: logout } = usePortalLogout();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  return (
+    <div className="flex min-h-screen bg-canvas">
+      {/* Desktop sidebar */}
+      <aside className="hidden w-60 shrink-0 border-r border-border bg-surface md:block">
+        <SidebarContent resident={resident} onLogout={logout} />
+      </aside>
+
+      {/* Mobile drawer */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-30 md:hidden">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setMobileOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 w-64 bg-surface shadow-xl">
+            <div className="flex justify-end p-2">
+              <button
                 onClick={() => setMobileOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 rounded-control px-3 py-2.5 text-sm font-medium ${isActive ? 'bg-brand-50 text-brand-700' : 'text-ink-muted hover:bg-canvas'
-                  }`
-                }
+                className="rounded-control p-2 text-ink-muted hover:bg-canvas"
+                aria-label="Close menu"
               >
-                <item.icon size={16} />
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-        )}
-      </header>
+                <X size={18} />
+              </button>
+            </div>
+            <SidebarContent resident={resident} onLogout={logout} onNavigate={() => setMobileOpen(false)} />
+          </aside>
+        </div>
+      )}
 
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        <Outlet />
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Mobile-only top bar: just the menu toggle */}
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-4 md:hidden">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="rounded-control p-2 text-ink-muted hover:bg-canvas"
+            aria-label="Open menu"
+          >
+            <Menu size={20} />
+          </button>
+          <span className="text-sm font-semibold text-ink">Resident Portal</span>
+        </header>
+
+        <main className="flex-1 px-4 py-6 md:px-8">
+          <div className="mx-auto max-w-5xl">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

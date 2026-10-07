@@ -30,7 +30,11 @@ export default function PortalDocumentsSection() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const isImage = (mimeType) => mimeType.startsWith('image/');
+  // Defensive against any document missing mimeType/fileType (older
+  // records, or anything created before these were required) — this is
+  // exactly what crashed the whole Profile page before.
+  const isImage = (mimeType) => Boolean(mimeType?.startsWith('image/'));
+  const formatFileType = (ft) => (ft ? ft.replace('_', ' ') : 'document');
 
   return (
     <section className="surface-card p-6">
@@ -58,8 +62,8 @@ export default function PortalDocumentsSection() {
               ) : (
                 <FileText size={16} className="text-ink-subtle" />
               )}
-              <span className="font-medium">{doc.originalFileName}</span>
-              <span className="text-xs capitalize text-ink-subtle">({doc.fileType.replace('_', ' ')})</span>
+              <span className="font-medium">{doc.originalFileName || 'Untitled file'}</span>
+              <span className="text-xs capitalize text-ink-subtle">({formatFileType(doc.fileType)})</span>
             </a>
             <button
               onClick={() => setDeleting(doc)}
