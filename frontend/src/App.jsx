@@ -49,6 +49,7 @@ import PortalMaintenancePage from '@/routes/portal/PortalMaintenancePage.jsx';
 import PortalMaintenanceDetailPage from '@/routes/portal/PortalMaintenanceDetailPage.jsx';
 import PortalVisitorsPage from '@/routes/portal/PortalVisitorsPage.jsx';
 import ErrorBoundary from '@/components/common/ErrorBoundary.jsx';
+import LandingPage from '@/routes/LandingPage.jsx';
 
 export default function App() {
   useSessionHydration();
@@ -59,10 +60,11 @@ export default function App() {
     <>
       <ErrorBoundary>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
-              <Route path="/" element={<DashboardPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/rooms" element={<RoomsPage />} />
               <Route path="/rooms/:roomId" element={<RoomDetailPage />} />
               <Route path="/residents" element={<ResidentsPage />} />

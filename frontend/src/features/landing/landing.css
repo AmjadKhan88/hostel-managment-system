@@ -1,0 +1,260 @@
+html.lp-smooth {
+  scroll-behavior: smooth;
+  scroll-padding-top: 84px;
+}
+
+.lp-display {
+  font-family: 'Poppins', 'Inter', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.lp-gold-text {
+  background: linear-gradient(90deg, #f5b83d, #ffe08f);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Buttons */
+.lp-btn-gold,
+.lp-btn-ghost,
+.lp-btn-navy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  padding: 0.85rem 1.5rem;
+  border-radius: 9999px;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.lp-btn-gold {
+  background: #f5b83d;
+  color: #0b1b3a;
+  box-shadow: 0 10px 30px -10px rgba(245, 184, 61, 0.8);
+}
+
+.lp-btn-gold:hover {
+  background: #ffc94f;
+  transform: translateY(-2px);
+}
+
+.lp-btn-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: #fff;
+  backdrop-filter: blur(6px);
+}
+
+.lp-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.lp-btn-navy {
+  background: #0b1b3a;
+  color: #fff;
+}
+
+.lp-btn-navy:hover {
+  background: #12285a;
+  transform: translateY(-2px);
+}
+
+.lp-btn-sm {
+  padding: 0.55rem 1.15rem;
+  font-size: 0.875rem;
+}
+
+/* Scroll reveal */
+.lp-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.lp-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Hero slideshow + Ken Burns */
+@keyframes lp-kenburns {
+  from {
+    transform: scale(1.02) translate(0, 0);
+  }
+
+  to {
+    transform: scale(1.15) translate(-1.5%, -1%);
+  }
+}
+
+.lp-slide {
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+
+.lp-slide.is-active {
+  opacity: 1;
+}
+
+.lp-slide.is-active img {
+  animation: lp-kenburns 9s ease-out forwards;
+}
+
+@keyframes lp-float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+.lp-float {
+  animation: lp-float 5s ease-in-out infinite;
+}
+
+.lp-float-slow {
+  animation: lp-float 7s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+@keyframes lp-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.lp-fade-up {
+  animation: lp-fade-up 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes lp-word-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.lp-word-in {
+  display: inline-block;
+  animation: lp-word-in 0.5s ease both;
+}
+
+@keyframes lp-scroll {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+}
+
+.lp-scroll-dot {
+  animation: lp-scroll 1.8s infinite;
+}
+
+/* Rooms: image swap + lift */
+.lp-room {
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+}
+
+.lp-room:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 28px 50px -20px rgba(11, 27, 58, 0.4);
+}
+
+.lp-img-a,
+.lp-img-b {
+  transition: opacity 0.6s ease, transform 1.2s ease;
+}
+
+.lp-img-b {
+  opacity: 0;
+}
+
+.lp-room:hover .lp-img-b {
+  opacity: 1;
+  transform: scale(1.07);
+}
+
+.lp-room:hover .lp-img-a {
+  transform: scale(1.07);
+}
+
+/* Food marquee */
+@keyframes lp-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.lp-marquee {
+  display: flex;
+  width: max-content;
+  animation: lp-marquee 38s linear infinite;
+}
+
+.lp-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* WhatsApp pulse */
+@keyframes lp-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.55);
+  }
+
+  70% {
+    box-shadow: 0 0 0 18px rgba(37, 211, 102, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+  }
+}
+
+.lp-pulse {
+  animation: lp-pulse 2.2s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .lp-slide.is-active img,
+  .lp-float,
+  .lp-float-slow,
+  .lp-marquee,
+  .lp-pulse,
+  .lp-scroll-dot,
+  .lp-word-in,
+  .lp-fade-up {
+    animation: none;
+  }
+}

@@ -26,7 +26,7 @@ import {
  */
 export const navSections = [
   {
-    items: [{ label: 'Dashboard', icon: LayoutDashboard, path: '/' }],
+    items: [{ label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' }],
   },
   {
     title: 'Operations',

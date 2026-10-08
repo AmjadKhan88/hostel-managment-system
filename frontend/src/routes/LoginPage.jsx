@@ -4,7 +4,7 @@ import LoginForm from '@/features/auth/components/LoginForm.jsx';
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectTo = location.state?.from ?? '/';
+  const redirectTo = location.state?.from ?? '/dashboard';
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-canvas px-4">
