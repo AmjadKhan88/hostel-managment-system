@@ -3,7 +3,7 @@ import { User } from '../models/User.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
-import { emitToHostel } from '../events/socketEvents.js';
+import { emitToHostel, emitToResident } from '../events/socketEvents.js';
 
 const RESOLVED_LIKE = ['resolved', 'closed'];
 
@@ -12,7 +12,10 @@ export async function createComplaint(user, data) {
   if (!hostelId) throw ApiError.badRequest('hostelId is required');
 
   const complaint = await Complaint.create({ ...data, hostelId, raisedBy: user.id });
-  emitToHostel(hostelId, 'complaint:created', { complaintId: complaint._id, subject: complaint.subject });
+  emitToHostel(hostelId, 'complaint:created', {
+    complaintId: complaint._id,
+    subject: complaint.subject,
+  });
   return complaint;
 }
 
@@ -52,7 +55,7 @@ export async function getComplaintById(user, id) {
 
 export async function updateComplaint(user, id, data) {
   const complaint = await getComplaintById(user, id);
-
+  const previousStatus = complaint.status;
   if (data.assignedTo) {
     const assignee = await User.findById(data.assignedTo);
     if (!assignee) throw ApiError.badRequest('Assigned user not found');
@@ -79,10 +82,19 @@ export async function updateComplaint(user, id, data) {
 
   await complaint.save();
 
-    emitToHostel(complaint.hostelId.toString(), 'complaint:updated', {
+  emitToHostel(complaint.hostelId.toString(), 'complaint:updated', {
     complaintId: complaint._id,
     status: complaint.status,
   });
+
+  const residentId = complaint.residentId?._id ?? complaint.residentId;
+  if (residentId && data.status && data.status !== previousStatus) {
+    emitToResident(residentId, 'complaint:updated', {
+      complaintId: complaint._id,
+      subject: complaint.subject,
+      status: complaint.status,
+    });
+  }
 
   return getComplaintById(user, id);
 }
@@ -91,5 +103,14 @@ export async function addComment(user, id, text) {
   const complaint = await getComplaintById(user, id);
   complaint.comments.push({ authorId: user.id, text });
   await complaint.save();
+
+  const residentId = complaint.residentId?._id ?? complaint.residentId;
+  if (residentId) {
+    emitToResident(residentId, 'complaint:commented', {
+      complaintId: complaint._id,
+      subject: complaint.subject,
+    });
+  }
+
   return getComplaintById(user, id);
 }

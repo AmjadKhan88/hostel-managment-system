@@ -2,12 +2,27 @@ import { Notice } from '../models/Notice.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
+import { emitToHostelResidents } from '../events/socketEvents.js';
 
 export async function createNotice(user, data) {
   const hostelId = resolveHostelScope(user, data.hostelId);
   if (!hostelId) throw ApiError.badRequest('hostelId is required');
 
-  return Notice.create({ ...data, hostelId, createdBy: user.id });
+  const notice = await Notice.create({ ...data, hostelId, createdBy: user.id });
+
+  // Only push when residents can see it right now. A notice scheduled for
+  // later has no timer behind it, so it won't push at publish time —
+  // residents see it on their next page load.
+  const visibleToResidents = ['everyone', 'residents'].includes(notice.audience);
+  const alreadyPublished = !notice.publishAt || notice.publishAt <= new Date();
+  if (visibleToResidents && alreadyPublished) {
+    emitToHostelResidents(hostelId, 'notice:published', {
+      noticeId: notice._id,
+      title: notice.title,
+    });
+  }
+
+  return notice;
 }
 
 export async function listNotices(user, query) {

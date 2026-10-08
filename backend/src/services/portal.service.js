@@ -323,6 +323,8 @@ export async function listMyVisitorPreRegistrations(residentAuth, query) {
 }
 
 export async function preRegisterMyVisitor(residentAuth, data) {
+  const resident = await Resident.findById(residentAuth.id).select('name');
+
   const visitor = await Visitor.create({
     hostelId: residentAuth.hostelId,
     residentId: residentAuth.id,
@@ -332,6 +334,12 @@ export async function preRegisterMyVisitor(residentAuth, data) {
     status: 'expected',
     expectedAt: data.expectedAt,
     registeredBy: null,
+  });
+
+  emitToHostel(residentAuth.hostelId, 'visitor:expected', {
+    visitorId: visitor._id,
+    visitorName: visitor.visitorName,
+    residentName: resident?.name ?? 'A resident',
   });
 
   return visitor;
@@ -353,6 +361,14 @@ export async function cancelMyVisitorPreRegistration(residentAuth, visitorId) {
 
   visitor.status = 'cancelled';
   await visitor.save();
+
+  const resident = await Resident.findById(residentAuth.id).select('name');
+  emitToHostel(residentAuth.hostelId, 'visitor:cancelled', {
+    visitorId: visitor._id,
+    visitorName: visitor.visitorName,
+    residentName: resident?.name ?? 'A resident',
+  });
+
   return visitor;
 }
 

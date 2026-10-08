@@ -32,6 +32,8 @@ Thumbs.db
 # Testing
 coverage/
 RESIDENT.md
+setup.md
+gapstoresolve.md
 
 # Uploads (local dev only — production uses object storage)
 backend/uploads/

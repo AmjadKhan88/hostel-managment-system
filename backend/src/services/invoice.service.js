@@ -7,6 +7,7 @@ import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
 import { recordAuditLog } from './audit.service.js';
+import { emitToResident } from '../events/socketEvents.js';
 
 function computeTotal(items) {
   return items.reduce((sum, item) => sum + item.amountMinorUnits, 0);
@@ -16,7 +17,10 @@ export async function createInvoice(user, data) {
   const hostelId = resolveHostelScope(user, data.hostelId);
   if (!hostelId) throw ApiError.badRequest('hostelId is required');
 
-  const [resident, hostel] = await Promise.all([Resident.findById(data.residentId), Hostel.findById(hostelId)]);
+  const [resident, hostel] = await Promise.all([
+    Resident.findById(data.residentId),
+    Hostel.findById(hostelId),
+  ]);
 
   if (!resident) throw ApiError.notFound('Resident not found');
   if (resident.hostelId.toString() !== hostelId) {
@@ -58,6 +62,12 @@ export async function createInvoice(user, data) {
     },
   });
 
+  emitToResident(resident._id, 'invoice:generated', {
+    invoiceId: invoice._id,
+    invoiceNumber: invoice.invoiceNumber,
+    totalMinorUnits: invoice.totalMinorUnits,
+  });
+
   return invoice;
 }
 
@@ -83,7 +93,10 @@ export async function listInvoices(user, query) {
 }
 
 export async function getInvoiceById(user, id) {
-  const invoice = await Invoice.findById(id).populate('residentId', 'name registrationNumber phone email');
+  const invoice = await Invoice.findById(id).populate(
+    'residentId',
+    'name registrationNumber phone email'
+  );
   if (!invoice) throw ApiError.notFound('Invoice not found');
   resolveHostelScope(user, invoice.hostelId.toString());
   return invoice;

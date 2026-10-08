@@ -3,9 +3,9 @@ import { Bell } from 'lucide-react';
 import { useNotificationsStore } from '@/store/notificationsStore';
 
 export default function NotificationMenu() {
-  const notifications = useNotificationsStore((s) => s.notifications);
-  const unreadCount = useNotificationsStore((s) => s.unreadCount);
-  const markAllRead = useNotificationsStore((s) => s.markAllRead);
+  const notifications = useStore((s) => s.notifications);
+  const unreadCount = useStore((s) => s.unreadCount);
+  const markAllRead = useStore((s) => s.markAllRead);
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
 

@@ -4,7 +4,7 @@ import { Resident } from '../models/Resident.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
-import { emitToHostel } from '../events/socketEvents.js';
+import { emitToHostel, emitToResident } from '../events/socketEvents.js';
 import { recordAuditLog } from './audit.service.js';
 import { recordPayment } from './payment.service.js';
 import { sendEmail } from './email.service.js';
@@ -172,12 +172,16 @@ export async function approveSubmission(user, id) {
   // (e.g. paid some other way since submission), THIS throws and the
   // submission stays 'pending' — nothing here is marked approved on a
   // failed payment record.
-  const payment = await recordPayment(user, {
-    invoiceId: submission.invoiceId,
-    amountMinorUnits: submission.amountMinorUnits,
-    method: submission.method,
-    notes: `Approved from resident payment submission (ref: ${submission.transactionReference || 'none given'})`,
-  });
+  const payment = await recordPayment(
+    user,
+    {
+      invoiceId: submission.invoiceId,
+      amountMinorUnits: submission.amountMinorUnits,
+      method: submission.method,
+      notes: `Approved from resident payment submission (ref: ${submission.transactionReference || 'none given'})`,
+    },
+    { notifyResident: false }
+  );
 
   submission.status = 'approved';
   submission.reviewedBy = user.id;
@@ -201,6 +205,13 @@ export async function approveSubmission(user, id) {
     submissionId: submission._id,
     residentId: submission.residentId,
     status: 'approved',
+  });
+
+  emitToResident(submission.residentId, 'payment_submission:reviewed', {
+    submissionId: submission._id,
+    invoiceId: submission.invoiceId,
+    status: 'approved',
+    amountMinorUnits: submission.amountMinorUnits,
   });
 
   return submission;
@@ -239,6 +250,14 @@ export async function rejectSubmission(user, id, { reason }) {
     submissionId: submission._id,
     residentId: submission.residentId,
     status: 'rejected',
+  });
+
+  emitToResident(submission.residentId, 'payment_submission:reviewed', {
+    submissionId: submission._id,
+    invoiceId: submission.invoiceId,
+    status: 'rejected',
+    amountMinorUnits: submission.amountMinorUnits,
+    rejectionReason: reason,
   });
 
   return submission;

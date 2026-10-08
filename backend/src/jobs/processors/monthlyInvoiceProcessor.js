@@ -6,7 +6,7 @@ import { Room } from '../../models/Room.model.js';
 import { Invoice } from '../../models/Invoice.model.js';
 import { getNextSequence } from '../../models/Counter.model.js';
 import { recordAuditLog } from '../../services/audit.service.js';
-import { emitToHostel } from '../../events/socketEvents.js';
+import { emitToHostel, emitToResident } from '../../events/socketEvents.js';
 import { logger } from '../../config/logger.js';
 import { isValidTimeZone, getLocalMonthKey } from '../../utils/timezone.js';
 
@@ -150,6 +150,12 @@ export async function generateMonthlyInvoices({ hostelId } = {}) {
             invoiceId: invoice._id,
             invoiceNumber,
             residentId: resident._id,
+          });
+
+          emitToResident(resident._id, 'invoice:generated', {
+            invoiceId: invoice._id,
+            invoiceNumber,
+            totalMinorUnits: invoice.totalMinorUnits,
           });
         } catch (err) {
           if (err?.code === 11000) {

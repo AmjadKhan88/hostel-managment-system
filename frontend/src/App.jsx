@@ -50,11 +50,13 @@ import PortalMaintenanceDetailPage from '@/routes/portal/PortalMaintenanceDetail
 import PortalVisitorsPage from '@/routes/portal/PortalVisitorsPage.jsx';
 import ErrorBoundary from '@/components/common/ErrorBoundary.jsx';
 import LandingPage from '@/routes/LandingPage.jsx';
+import { useResidentRealtime } from '@/features/realtime/hooks/useResidentRealtime';
 
 export default function App() {
   useSessionHydration();
   useRealtimeNotifications();
   useResidentSessionHydration();
+  useResidentRealtime();
 
   return (
     <>

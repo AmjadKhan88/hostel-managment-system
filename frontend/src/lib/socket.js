@@ -1,20 +1,52 @@
 import { io } from 'socket.io-client';
 import { config } from '@/config/env';
+import { apiClient } from '@/lib/apiClient';
 
-let socket = null;
+const REFRESH_COOLDOWN_MS = 30_000;
 
 /**
- * Lazily creates a single shared socket connection. Auth relies on the
- * accessToken HttpOnly cookie already being set from login — the browser
- * attaches it automatically since withCredentials is set, mirroring how
- * apiClient authenticates over plain HTTP.
+ * `role` tells the server which cookie to authenticate this connection
+ * with — staff and resident sessions can both exist in one browser.
+ *
+ * A rejection by the server's auth middleware (e.g. the 15-minute access
+ * token expired) is NOT retried by socket.io on its own. Without the
+ * handler below, live updates would silently stop after 15 minutes. It
+ * refreshes the session and reconnects, at most once per cooldown so a
+ * truly dead session can't loop.
  */
-export function getSocket() {
-  if (!socket) {
-    socket = io(config.socketUrl, {
-      withCredentials: true,
-      autoConnect: false,
-    });
-  }
+function createSocket({ role, refreshPath }) {
+  const socket = io(config.socketUrl, {
+    withCredentials: true,
+    autoConnect: false,
+    auth: { role },
+  });
+
+  let lastRefreshAt = 0;
+  socket.on('connect_error', async (err) => {
+    if (!/expired|authentication/i.test(err.message)) return;
+    if (Date.now() - lastRefreshAt < REFRESH_COOLDOWN_MS) return;
+    lastRefreshAt = Date.now();
+    try {
+      await apiClient.post(refreshPath);
+      socket.connect();
+    } catch {
+      // Session is gone — the next REST call sends the user to login.
+    }
+  });
+
   return socket;
+}
+
+let staffSocket = null;
+let residentSocket = null;
+
+export function getSocket() {
+  if (!staffSocket) staffSocket = createSocket({ role: 'staff', refreshPath: '/auth/refresh' });
+  return staffSocket;
+}
+
+export function getResidentSocket() {
+  if (!residentSocket)
+    residentSocket = createSocket({ role: 'resident', refreshPath: '/portal/auth/refresh' });
+  return residentSocket;
 }

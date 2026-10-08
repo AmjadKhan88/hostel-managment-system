@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { Menu, X, LogOut, Home, FileText, Wallet, MessageSquareWarning, Megaphone, User, Wrench, Contact } from 'lucide-react';
 import { useResidentAuthStore } from '@/store/residentAuthStore';
+import { useResidentNotificationsStore } from '@/store/residentNotificationsStore';
 import { usePortalLogout } from '@/features/portalAuth/hooks/usePortalAuth';
+import NotificationMenu from '@/components/layout/NotificationMenu.jsx';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: Home, path: '/portal' },
@@ -81,12 +83,10 @@ export default function PortalLayout() {
 
   return (
     <div className="flex min-h-screen bg-canvas">
-      {/* Desktop sidebar */}
       <aside className="hidden w-60 shrink-0 border-r border-border bg-surface md:block">
         <SidebarContent resident={resident} onLogout={logout} />
       </aside>
 
-      {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-30 md:hidden">
           <div className="absolute inset-0 bg-black/30" onClick={() => setMobileOpen(false)} />
@@ -106,16 +106,18 @@ export default function PortalLayout() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Mobile-only top bar: just the menu toggle */}
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-4 md:hidden">
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="rounded-control p-2 text-ink-muted hover:bg-canvas"
-            aria-label="Open menu"
-          >
-            <Menu size={20} />
-          </button>
-          <span className="text-sm font-semibold text-ink">Resident Portal</span>
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-surface px-4 md:px-8">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="rounded-control p-2 text-ink-muted hover:bg-canvas md:hidden"
+              aria-label="Open menu"
+            >
+              <Menu size={20} />
+            </button>
+            <span className="text-sm font-semibold text-ink md:hidden">Resident Portal</span>
+          </div>
+          <NotificationMenu useStore={useResidentNotificationsStore} />
         </header>
 
         <main className="flex-1 px-4 py-6 md:px-8">

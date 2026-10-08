@@ -4,7 +4,7 @@ import { getNextSequence } from '../models/Counter.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
-import { emitToHostel } from '../events/socketEvents.js';
+import { emitToHostel, emitToResident } from '../events/socketEvents.js';
 import { recordAuditLog } from './audit.service.js';
 
 function computeInvoiceStatus(totalMinorUnits, paidMinorUnits) {
@@ -20,7 +20,7 @@ async function loadInvoiceForHostel(user, invoiceId) {
   return { invoice, hostelId };
 }
 
-export async function recordPayment(user, data) {
+export async function recordPayment(user, data, { notifyResident = true } = {}) {
   const { invoice, hostelId } = await loadInvoiceForHostel(user, data.invoiceId);
 
   if (invoice.status === 'void') {
@@ -29,7 +29,9 @@ export async function recordPayment(user, data) {
 
   const balance = invoice.totalMinorUnits - invoice.paidMinorUnits;
   if (data.amountMinorUnits > balance) {
-    throw ApiError.badRequest(`Payment amount exceeds the outstanding balance (${balance} minor units remaining)`);
+    throw ApiError.badRequest(
+      `Payment amount exceeds the outstanding balance (${balance} minor units remaining)`
+    );
   }
 
   const seq = await getNextSequence(`payment:${hostelId}`);
@@ -61,6 +63,14 @@ export async function recordPayment(user, data) {
     amountMinorUnits: payment.amountMinorUnits,
     receiptNumber: payment.receiptNumber,
   });
+
+  if (notifyResident) {
+    emitToResident(invoice.residentId, 'payment:recorded', {
+      invoiceId: invoice._id,
+      amountMinorUnits: payment.amountMinorUnits,
+      receiptNumber: payment.receiptNumber,
+    });
+  }
 
   recordAuditLog({
     hostelId,
@@ -116,7 +126,11 @@ export async function refundPayment(user, id, { reason }) {
     action: 'payment.refunded',
     entityType: 'Payment',
     entityId: payment._id,
-    metadata: { invoiceId: invoice._id, amountMinorUnits: payment.amountMinorUnits, reason: payment.refundReason },
+    metadata: {
+      invoiceId: invoice._id,
+      amountMinorUnits: payment.amountMinorUnits,
+      reason: payment.refundReason,
+    },
   });
 
   return payment;

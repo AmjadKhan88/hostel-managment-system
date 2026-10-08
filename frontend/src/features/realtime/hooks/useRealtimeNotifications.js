@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { getSocket } from '@/lib/socket';
+import { formatMoney } from '@/lib/money';
 import { useAuthStore } from '@/store/authStore';
 import { useNotificationsStore } from '@/store/notificationsStore';
 import { useToastStore } from '@/store/toastStore';
@@ -28,6 +30,7 @@ function describeReminder(reminder) {
   }
 }
 
+// Events that produce a toast + bell entry.
 const EVENT_MESSAGES = {
   'payment:recorded': (p) =>
     `Payment of ${(p.amountMinorUnits / 100).toFixed(2)} recorded (${p.receiptNumber})`,
@@ -35,21 +38,48 @@ const EVENT_MESSAGES = {
   'complaint:updated': (p) => `Complaint status changed to ${p.status.replace('_', ' ')}`,
   'admission:created': () => 'New admission application submitted',
   'visitor:arrived': (p) => `${p.visitorName} checked in to see ${p.residentName}`,
+  'visitor:expected': (p) => `${p.residentName} pre-registered a visitor: ${p.visitorName}`,
+  'visitor:cancelled': (p) =>
+    `${p.residentName} cancelled the expected visit from ${p.visitorName}`,
   'allocation:changed': (p) => `Room allocation ${p.type.replace('_', ' ')}`,
   'invoice:generated': (p) => `Invoice ${p.invoiceNumber} generated automatically`,
   'payment:overdue': (p) =>
     `${p.invoiceNumber} is ${p.daysOverdue}d overdue (${p.residentName})${describeReminder(p.reminder)}`,
+  'payment_submission:created': (p) =>
+    `${p.residentName} submitted a payment of ${formatMoney(p.amountMinorUnits)} for review`,
+  'maintenance:created': (p) => `New maintenance request: ${p.title}`,
+  'expense:generated': (p) =>
+    `Recurring expense added: ${p.title} (${formatMoney(p.amountMinorUnits)})`,
 };
 
+// Which cached lists to refresh when an event arrives, so open pages
+// update instantly instead of waiting for a poll. 'payment_submission:reviewed'
+// refreshes the queue silently — the reviewer already sees the result, so
+// no toast, but a second admin's open queue updates live.
+const INVALIDATIONS = {
+  'payment_submission:created': [['payment-submissions']],
+  'payment_submission:reviewed': [['payment-submissions']],
+  'visitor:arrived': [['visitors']],
+  'visitor:expected': [['visitors']],
+  'visitor:cancelled': [['visitors']],
+  'complaint:created': [['complaints']],
+  'complaint:updated': [['complaints']],
+  'maintenance:created': [['maintenance']],
+  'expense:generated': [['expenses'], ['finance']],
+};
+
+const ALL_EVENTS = [...new Set([...Object.keys(EVENT_MESSAGES), ...Object.keys(INVALIDATIONS)])];
+
 /**
- * Connects the shared socket once the user is authenticated and routes
- * every event into both the notification bell (persistent list) and a
- * transient toast. Mounted once at the App root.
+ * Connects the staff socket once authenticated and routes every event into
+ * the notification bell, a toast, and cache invalidation. Mounted once at
+ * the App root.
  */
 export function useRealtimeNotifications() {
   const user = useAuthStore((s) => s.user);
   const addNotification = useNotificationsStore((s) => s.addNotification);
   const addToast = useToastStore((s) => s.addToast);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!user) return undefined;
@@ -57,16 +87,22 @@ export function useRealtimeNotifications() {
     const socket = getSocket();
     socket.connect();
 
-    const handlers = Object.entries(EVENT_MESSAGES).map(([event, formatMessage]) => {
+    const handlers = ALL_EVENTS.map((event) => {
       const handler = (payload) => {
-        const message = formatMessage(payload);
-        addNotification({
-          id: `${event}-${Date.now()}`,
-          event,
-          message,
-          at: new Date().toISOString(),
-        });
-        addToast(message);
+        const formatMessage = EVENT_MESSAGES[event];
+        if (formatMessage) {
+          const message = formatMessage(payload);
+          addNotification({
+            id: `${event}-${Date.now()}`,
+            event,
+            message,
+            at: new Date().toISOString(),
+          });
+          addToast(message);
+        }
+        (INVALIDATIONS[event] ?? []).forEach((queryKey) =>
+          queryClient.invalidateQueries({ queryKey })
+        );
       };
       socket.on(event, handler);
       return [event, handler];
@@ -76,5 +112,5 @@ export function useRealtimeNotifications() {
       handlers.forEach(([event, handler]) => socket.off(event, handler));
       socket.disconnect();
     };
-  }, [user, addNotification, addToast]);
+  }, [user, addNotification, addToast, queryClient]);
 }

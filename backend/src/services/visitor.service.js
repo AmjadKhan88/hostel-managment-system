@@ -3,6 +3,19 @@ import { Resident } from '../models/Resident.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
+import { emitToHostel, emitToResident } from '../events/socketEvents.js';
+
+function announceArrival(visitor, residentName) {
+  emitToHostel(visitor.hostelId.toString(), 'visitor:arrived', {
+    visitorId: visitor._id,
+    visitorName: visitor.visitorName,
+    residentName: residentName ?? 'a resident',
+  });
+  emitToResident(visitor.residentId, 'visitor:arrived', {
+    visitorId: visitor._id,
+    visitorName: visitor.visitorName,
+  });
+}
 
 /** Staff walk-in registration — the visitor is physically here right now. */
 export async function checkInVisitor(user, data) {
@@ -15,7 +28,7 @@ export async function checkInVisitor(user, data) {
     throw ApiError.badRequest('Resident does not belong to this hostel');
   }
 
-  return Visitor.create({
+  const visitor = await Visitor.create({
     hostelId,
     residentId: resident._id,
     visitorName: data.visitorName,
@@ -25,6 +38,9 @@ export async function checkInVisitor(user, data) {
     checkInAt: new Date(),
     registeredBy: user.id,
   });
+
+  announceArrival(visitor, resident.name);
+  return visitor;
 }
 
 /** Staff action: a pre-registered (status: 'expected') visitor has arrived. */
@@ -42,6 +58,9 @@ export async function checkInExpectedVisitor(user, id) {
   visitor.status = 'inside';
   visitor.checkInAt = new Date();
   await visitor.save();
+
+  const resident = await Resident.findById(visitor.residentId).select('name');
+  announceArrival(visitor, resident?.name);
   return visitor;
 }
 
@@ -68,7 +87,7 @@ export async function listVisitors(user, query) {
 
   const filter = {};
   if (hostelId) filter.hostelId = hostelId;
-  if (query.status) filter.status = query.status; // 'expected' | 'inside' | 'checked_out' | 'cancelled'
+  if (query.status) filter.status = query.status;
   if (query.residentId) filter.residentId = query.residentId;
   if (query.search) {
     filter.$or = [

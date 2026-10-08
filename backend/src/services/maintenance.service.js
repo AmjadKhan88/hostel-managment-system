@@ -4,6 +4,7 @@ import { User } from '../models/User.model.js';
 import { ApiError } from '../utils/ApiError.js';
 import { resolveHostelScope } from '../utils/hostelScope.js';
 import { parsePagination, buildPaginatedResponse } from '../utils/pagination.js';
+import { emitToResident } from '../events/socketEvents.js';
 
 const RESOLVED_LIKE = ['resolved', 'closed'];
 
@@ -54,6 +55,7 @@ export async function getTicketById(user, id) {
 
 export async function updateTicket(user, id, data) {
   const ticket = await getTicketById(user, id);
+  const previousStatus = ticket.status;
 
   if (data.assignedTo) {
     const assignee = await User.findById(data.assignedTo);
@@ -78,5 +80,13 @@ export async function updateTicket(user, id, data) {
   if (data.notes !== undefined) ticket.notes = data.notes;
 
   await ticket.save();
+
+  if (ticket.residentId && data.status && data.status !== previousStatus) {
+    emitToResident(ticket.residentId, 'maintenance:updated', {
+      ticketId: ticket._id,
+      title: ticket.title,
+      status: ticket.status,
+    });
+  }
   return getTicketById(user, id);
 }
