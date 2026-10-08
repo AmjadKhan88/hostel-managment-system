@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import LoginForm from '@/features/auth/components/LoginForm.jsx';
 
 export default function LoginPage() {
@@ -14,6 +14,11 @@ export default function LoginPage() {
           <h1 className="mt-1 text-xl font-semibold text-ink">Sign in to your account</h1>
         </div>
         <LoginForm onSuccess={() => navigate(redirectTo, { replace: true })} />
+        <p className="mt-4 text-center text-sm text-ink-muted">
+          <Link to="/forgot-password" className="font-medium text-brand-600 hover:text-brand-700">
+            Forgot your password?
+          </Link>
+        </p>
       </div>
     </div>
   );

@@ -9,6 +9,8 @@ import { useAuditLogs } from '@/features/audit/hooks/useAuditLogs';
 const ACTIONS = [
   'auth.login',
   'auth.login_failed',
+  'auth.password_reset_requested',
+  'auth.password_reset',
   'resident.created',
   'resident.updated',
   'role.updated',
@@ -17,9 +19,21 @@ const ACTIONS = [
   'invoice.voided',
   'payment.recorded',
   'payment.refunded',
+  'payment_submission.created',
+  'payment_submission.approved',
+  'payment_submission.rejected',
+  'expense.recorded',
+  'expense.updated',
+  'expense.deleted',
+  'complaint.created',
+  'maintenance.created',
   'allocation.assigned',
   'allocation.transferred',
   'allocation.checked_out',
+  'portal.invited',
+  'portal.account_activated',
+  'portal.login',
+  'portal.password_reset',
 ];
 
 export default function AuditLogPage() {

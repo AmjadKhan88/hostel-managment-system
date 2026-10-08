@@ -52,6 +52,9 @@ import ErrorBoundary from '@/components/common/ErrorBoundary.jsx';
 import LandingPage from '@/routes/LandingPage.jsx';
 import { useResidentRealtime } from '@/features/realtime/hooks/useResidentRealtime';
 
+import ForgotPasswordPage from '@/routes/ForgotPasswordPage.jsx';
+import ResetPasswordPage from '@/routes/ResetPasswordPage.jsx';
+
 export default function App() {
   useSessionHydration();
   useRealtimeNotifications();
@@ -64,6 +67,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
               <Route path="/dashboard" element={<DashboardPage />} />

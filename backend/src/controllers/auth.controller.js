@@ -24,3 +24,17 @@ export const me = asyncHandler(async (req, res) => {
   const profile = await authService.getProfile(req.user.id);
   new ApiResponse(200, { user: profile }, 'Profile fetched').send(res);
 });
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  await authService.requestPasswordReset(req.body.email);
+  new ApiResponse(
+    200,
+    null,
+    'If an account exists for that email, a reset link has been sent'
+  ).send(res);
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  await authService.resetPassword(req.body);
+  new ApiResponse(200, null, 'Password reset — you can now sign in').send(res);
+});
