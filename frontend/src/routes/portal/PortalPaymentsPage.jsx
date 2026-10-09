@@ -2,6 +2,7 @@ import { useState } from 'react';
 import DataTable from '@/components/ui/DataTable.jsx';
 import { formatMoney } from '@/lib/money';
 import { usePortalPayments } from '@/features/portal/hooks/usePortalData';
+import DownloadButton from '@/components/ui/DownloadButton.jsx';
 
 export default function PortalPaymentsPage() {
   const [page, setPage] = useState(1);
@@ -16,6 +17,18 @@ export default function PortalPaymentsPage() {
     { key: 'method', header: 'Method', render: (row) => row.method.replace('_', ' ') },
     { key: 'status', header: 'Status', render: (row) => (row.status === 'refunded' ? 'Refunded' : 'Completed') },
     { key: 'paidAt', header: 'Date', render: (row) => new Date(row.paidAt).toLocaleDateString() },
+    {
+      key: 'receipt',
+      header: '',
+      render: (row) => (
+        <DownloadButton
+          variant="link"
+          label="Receipt"
+          path={`/portal/payments/${row._id}/receipt`}
+          filename={`Receipt-${row.receiptNumber}.pdf`}
+        />
+      ),
+    },
   ];
 
   return (

@@ -8,6 +8,7 @@ import { formatMoney } from '@/lib/money';
 import { useInvoice, useVoidInvoice } from '@/features/fees/hooks/useInvoices';
 import { usePaymentsForInvoice, useRefundPayment } from '@/features/fees/hooks/usePayments';
 import RecordPaymentModal from '@/features/fees/components/RecordPaymentModal.jsx';
+import DownloadButton from '@/components/ui/DownloadButton.jsx';
 
 export default function InvoiceDetailPage() {
   const { invoiceId } = useParams();
@@ -82,7 +83,8 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
+          <DownloadButton path={`/invoices/${invoice._id}/pdf`} filename={`Invoice-${invoice.invoiceNumber}.pdf`} />
           {canRecordPayment && (
             <button
               onClick={() => setPaymentModalOpen(true)}
@@ -130,16 +132,24 @@ export default function InvoiceDetailPage() {
                   {p.receiptNumber} · {new Date(p.paidAt).toLocaleString()}
                 </p>
               </div>
-              {p.status === 'refunded' ? (
-                <span className="text-xs font-medium text-ink-subtle">Refunded</span>
-              ) : (
-                <button
-                  onClick={() => setRefundingId(p._id)}
-                  className="text-xs font-medium text-danger hover:underline"
-                >
-                  Refund
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                <DownloadButton
+                  variant="link"
+                  label="Receipt"
+                  path={`/payments/${p._id}/receipt`}
+                  filename={`Receipt-${p.receiptNumber}.pdf`}
+                />
+                {p.status === 'refunded' ? (
+                  <span className="text-xs font-medium text-ink-subtle">Refunded</span>
+                ) : (
+                  <button
+                    onClick={() => setRefundingId(p._id)}
+                    className="text-xs font-medium text-danger hover:underline"
+                  >
+                    Refund
+                  </button>
+                )}
+              </div>
             </li>
           ))}
         </ul>

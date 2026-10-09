@@ -5,6 +5,7 @@ import { formatMoney } from '@/lib/money';
 import { usePortalInvoice, usePaymentSubmissions } from '@/features/portal/hooks/usePortalData';
 import { useState } from 'react';
 import PayInvoiceModal from '@/features/portal/components/PayInvoiceModal.jsx';
+import DownloadButton from '@/components/ui/DownloadButton.jsx';
 
 export default function PortalInvoiceDetailPage() {
   const { invoiceId } = useParams();
@@ -41,6 +42,7 @@ export default function PortalInvoiceDetailPage() {
         <h1 className="text-xl font-semibold text-ink">{invoice.invoiceNumber}</h1>
         <div className="flex items-center gap-2">
           <StatusBadge status={invoice.status} />
+          <DownloadButton path={`/portal/invoices/${invoice._id}/pdf`} filename={`Invoice-${invoice.invoiceNumber}.pdf`} />
           {balance > 0 && invoice.status !== 'void' && (
             <button
               onClick={() => setPayModalOpen(true)}
