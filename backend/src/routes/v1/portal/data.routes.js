@@ -11,6 +11,7 @@ import {
 } from '../../../validators/portal.validator.js';
 import { createPaymentSubmissionSchema } from '../../../validators/paymentSubmission.validator.js';
 import * as portalController from '../../../controllers/portal.controller.js';
+import * as documentController from '../../../controllers/document.controller.js';
 
 const router = Router();
 
@@ -18,8 +19,10 @@ router.use(authenticateResident);
 
 router.get('/invoices', portalController.listMyInvoices);
 router.get('/invoices/:id', portalController.getMyInvoice);
+router.get('/invoices/:id/pdf', documentController.residentInvoicePdf);
 
 router.get('/payments', portalController.listMyPayments);
+router.get('/payments/:id/receipt', documentController.residentReceiptPdf);
 
 router.get('/complaints', portalController.listMyComplaints);
 router.get('/complaints/:id', portalController.getMyComplaint);

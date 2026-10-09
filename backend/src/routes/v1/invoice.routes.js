@@ -5,6 +5,7 @@ import { validate } from '../../middlewares/validate.js';
 import { createInvoiceSchema } from '../../validators/invoice.validator.js';
 import { PERMISSIONS } from '../../constants/permissions.js';
 import * as invoiceController from '../../controllers/invoice.controller.js';
+import * as documentController from '../../controllers/document.controller.js';
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.get(
   invoiceController.getOutstandingBalances
 );
 router.get('/:id', authorize(PERMISSIONS.PAYMENTS_READ), invoiceController.getInvoice);
+router.get('/:id/pdf', authorize(PERMISSIONS.PAYMENTS_READ), documentController.staffInvoicePdf);
 router.post('/:id/void', authorize(PERMISSIONS.PAYMENTS_CREATE), invoiceController.voidInvoice);
 
 export default router;
