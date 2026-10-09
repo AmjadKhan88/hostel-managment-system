@@ -60,7 +60,12 @@ const invoiceSchema = new mongoose.Schema(
 invoiceSchema.index({ hostelId: 1, invoiceNumber: 1 }, { unique: true });
 invoiceSchema.index({ hostelId: 1, residentId: 1 });
 invoiceSchema.index({ hostelId: 1, status: 1 });
-invoiceSchema.index({ hostelId: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
+// Partial, not sparse — see the note in Expense.model.js. A sparse index still
+// indexes the stored nulls, which blocks a hostel's second manual invoice.
+invoiceSchema.index(
+  { hostelId: 1, idempotencyKey: 1 },
+  { unique: true, partialFilterExpression: { idempotencyKey: { $type: 'string' } } }
+);
 
 invoiceSchema.virtual('balanceMinorUnits').get(function () {
   return this.totalMinorUnits - this.paidMinorUnits;

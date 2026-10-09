@@ -50,6 +50,13 @@ expenseSchema.pre('validate', function assignSeriesId(next) {
 expenseSchema.index({ hostelId: 1, incurredAt: -1 });
 expenseSchema.index({ hostelId: 1, category: 1 });
 expenseSchema.index({ hostelId: 1, seriesId: 1, incurredAt: -1 });
-expenseSchema.index({ hostelId: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
+// Partial, NOT sparse. `default: null` stores an explicit null, and a sparse
+// index still indexes nulls (it only skips MISSING fields), so every manually
+// created expense in a hostel used to collide with the previous one. Only
+// documents with a real string key are indexed now.
+expenseSchema.index(
+  { hostelId: 1, idempotencyKey: 1 },
+  { unique: true, partialFilterExpression: { idempotencyKey: { $type: 'string' } } }
+);
 
 export const Expense = mongoose.model('Expense', expenseSchema);

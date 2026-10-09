@@ -1,11 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../jobs/queues.js', () => ({
-  monthlyInvoiceQueue: { getJob: vi.fn() },
-  paymentReminderQueue: { getJob: vi.fn() },
+const { mockQueue } = vi.hoisted(() => ({
+  mockQueue: () => ({
+    getJob: vi.fn(),
+  }),
 }));
 
-import { monthlyInvoiceQueue } from '../jobs/queues.js';
+vi.mock('../jobs/queues.js', () => ({
+  monthlyInvoiceQueue: mockQueue(),
+  paymentReminderQueue: mockQueue(),
+  recurringExpenseQueue: mockQueue(),
+}));
+
+import { monthlyInvoiceQueue, recurringExpenseQueue } from '../jobs/queues.js';
 import { retryJob } from './automation.service.js';
 import { SUPER_ADMIN_WILDCARD } from '../constants/permissions.js';
 
@@ -18,28 +25,43 @@ function makeJob({ state, hostelId }) {
   };
 }
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => vi.resetAllMocks());
 
 describe('retryJob', () => {
   it('lets a super admin retry any failed job, including one with no hostelId', async () => {
     const job = makeJob({ state: 'failed', hostelId: null });
     monthlyInvoiceQueue.getJob.mockResolvedValue(job);
+
     const user = { hostelId: null, permissions: [SUPER_ADMIN_WILDCARD] };
     await retryJob(user, 'monthly-invoices', 'job-1');
+
     expect(job.retry).toHaveBeenCalledOnce();
   });
 
   it('lets hostel-scoped staff retry a job belonging to their OWN hostel', async () => {
     const job = makeJob({ state: 'failed', hostelId: 'hostel-a' });
     monthlyInvoiceQueue.getJob.mockResolvedValue(job);
+
     const user = { hostelId: 'hostel-a', permissions: ['settings.manage'] };
     await retryJob(user, 'monthly-invoices', 'job-1');
+
+    expect(job.retry).toHaveBeenCalledOnce();
+  });
+
+  it('retries a failed job on the recurring-expenses queue too', async () => {
+    const job = makeJob({ state: 'failed', hostelId: 'hostel-a' });
+    recurringExpenseQueue.getJob.mockResolvedValue(job);
+
+    const user = { hostelId: 'hostel-a', permissions: ['settings.manage'] };
+    await retryJob(user, 'recurring-expenses', 'job-1');
+
     expect(job.retry).toHaveBeenCalledOnce();
   });
 
   it("refuses hostel-scoped staff retrying ANOTHER hostel's job", async () => {
     const job = makeJob({ state: 'failed', hostelId: 'hostel-b' });
     monthlyInvoiceQueue.getJob.mockResolvedValue(job);
+
     const user = { hostelId: 'hostel-a', permissions: ['settings.manage'] };
     await expect(retryJob(user, 'monthly-invoices', 'job-1')).rejects.toThrow(/your own hostel/i);
     expect(job.retry).not.toHaveBeenCalled();
@@ -48,6 +70,7 @@ describe('retryJob', () => {
   it('refuses hostel-scoped staff retrying a job with no hostelId (an "all hostels" run)', async () => {
     const job = makeJob({ state: 'failed', hostelId: null });
     monthlyInvoiceQueue.getJob.mockResolvedValue(job);
+
     const user = { hostelId: 'hostel-a', permissions: ['settings.manage'] };
     await expect(retryJob(user, 'monthly-invoices', 'job-1')).rejects.toThrow(/your own hostel/i);
   });
@@ -55,6 +78,7 @@ describe('retryJob', () => {
   it('refuses to retry a job that is not currently failed', async () => {
     const job = makeJob({ state: 'completed', hostelId: 'hostel-a' });
     monthlyInvoiceQueue.getJob.mockResolvedValue(job);
+
     const user = { hostelId: 'hostel-a', permissions: ['settings.manage'] };
     await expect(retryJob(user, 'monthly-invoices', 'job-1')).rejects.toThrow(/only failed jobs/i);
   });

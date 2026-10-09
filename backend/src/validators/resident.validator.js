@@ -11,7 +11,12 @@ const guardianSchema = z.object({
 export const createResidentSchema = z.object({
   hostelId: z.string().optional(), // optional for non-super-admins; resolved server-side
   name: z.string().min(2).max(120),
-  email: z.string().email().optional().or(z.literal('')),
+  email: z
+    .string()
+    .email()
+    .optional()
+    .or(z.literal(''))
+    .transform((value) => value || undefined),
   phone: z.string().min(6).max(20),
   registrationNumber: z.string().min(1).max(40),
   institution: z.string().max(160).optional(),
