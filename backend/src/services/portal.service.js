@@ -13,6 +13,7 @@ import { uploadBufferToCloudinary, cloudinary } from '../config/cloudinary.js';
 import { MaintenanceTicket } from '../models/MaintenanceTicket.model.js';
 import { Visitor } from '../models/Visitor.model.js';
 import { Hostel } from '../models/Hostel.model.js';
+import '../models/User.model.js';
 import * as paymentSubmissionService from './paymentSubmission.service.js';
 // ---- Invoices ----
 
