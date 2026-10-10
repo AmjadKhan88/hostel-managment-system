@@ -1,6 +1,6 @@
 import PDFDocument from 'pdfkit';
 import { isValidTimeZone } from '../utils/timezone.js';
-
+import { formatMoney as money } from '../utils/money.js';
 const COLORS = {
   ink: '#0F172A',
   muted: '#64748B',
@@ -34,16 +34,6 @@ const STATUS_STYLE = {
 // Arabic names need an embedded Unicode font; see the notes after the code.)
 const safe = (value) => String(value ?? '').replace(/[^\x20-\x7E\xA0-\xFF]/g, '?');
 const methodLabel = (method) => METHOD_LABELS[method] ?? safe(method);
-
-function money(minorUnits, currency) {
-  try {
-    return new Intl.NumberFormat('en-PK', { style: 'currency', currency })
-      .format((minorUnits ?? 0) / 100)
-      .replace(/\u00a0/g, ' ');
-  } catch {
-    return `${currency} ${((minorUnits ?? 0) / 100).toFixed(2)}`;
-  }
-}
 
 const zone = (hostel) => (isValidTimeZone(hostel?.timezone) ? hostel.timezone : 'UTC');
 

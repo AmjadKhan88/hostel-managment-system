@@ -22,4 +22,5 @@ export const portalApi = {
   paymentMethods: () => apiClient.get('/portal/payment-methods'),
   paymentSubmissions: (params) => apiClient.get('/portal/payment-submissions', { params }),
   submitPaymentProof: (formData) => apiClient.post('/portal/payment-submissions', formData),
+  addComplaintComment: (id, text) => apiClient.post(`/portal/complaints/${id}/comments`, { text }),
 };

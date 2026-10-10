@@ -10,6 +10,8 @@ import { recordPayment } from './payment.service.js';
 import { sendEmail } from './email.service.js';
 import { sendWhatsApp } from './whatsapp.service.js';
 import { uploadBufferToCloudinary, cloudinary } from '../config/cloudinary.js';
+import { Hostel } from '../models/Hostel.model.js';
+import { formatMoney } from '../utils/money.js';
 
 // ---- Resident-side: submit a claim ----
 
@@ -136,7 +138,12 @@ export async function getSubmissionById(user, id) {
 
 async function notifyResidentOfReview(resident, { approved, submission, rejectionReason }) {
   if (!resident) return;
-  const amount = (submission.amountMinorUnits / 100).toFixed(2);
+  // .catch so a failed lookup can't become an unhandled rejection — callers
+  // fire this without awaiting it.
+  const hostel = await Hostel.findById(submission.hostelId)
+    .select('currency')
+    .catch(() => null);
+  const amount = formatMoney(submission.amountMinorUnits, hostel?.currency);
   const text = approved
     ? `Hi ${resident.name}, your payment submission of ${amount} has been approved and applied to your invoice.`
     : `Hi ${resident.name}, your payment submission of ${amount} could not be approved. Reason: ${rejectionReason}. Please resubmit with the correct details.`;

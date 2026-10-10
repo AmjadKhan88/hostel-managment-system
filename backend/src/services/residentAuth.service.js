@@ -9,6 +9,7 @@ import {
 } from '../utils/residentTokens.js';
 import { sendEmail } from './email.service.js';
 import { recordAuditLog } from './audit.service.js';
+import { Hostel } from '../models/Hostel.model.js';
 
 function hashToken(rawToken) {
   // A one-time setup/reset token is bearer-equivalent to a password reset,
@@ -167,6 +168,11 @@ function buildResidentAuthPayload(resident) {
   };
 }
 
+async function getHostelCurrency(hostelId) {
+  const hostel = await Hostel.findById(hostelId).select('currency');
+  return hostel?.currency ?? 'PKR';
+}
+
 export async function loginResident({ email, password }) {
   const resident = await Resident.findOne({ email: email?.toLowerCase() }).select(
     '+portalAccount.passwordHash'
@@ -212,6 +218,7 @@ export async function loginResident({ email, password }) {
       name: resident.name,
       email: resident.email,
       hostelId: resident.hostelId,
+      currency: await getHostelCurrency(resident.hostelId),
     },
   };
 }
@@ -257,5 +264,6 @@ export async function getResidentPortalProfile(residentAuth) {
     registrationNumber: resident.registrationNumber,
     status: resident.status,
     hostelId: resident.hostelId,
+    currency: await getHostelCurrency(resident.hostelId),
   };
 }

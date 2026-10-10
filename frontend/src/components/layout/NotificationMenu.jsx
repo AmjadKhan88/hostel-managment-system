@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, CheckCheck } from 'lucide-react';
 import { useNotificationsStore } from '@/store/notificationsStore';
 
-export default function NotificationMenu() {
+export default function NotificationMenu({ useStore = useNotificationsStore }) {
   const notifications = useStore((s) => s.notifications);
-  const unreadCount = useStore((s) => s.unreadCount);
+  const markRead = useStore((s) => s.markRead);
   const markAllRead = useStore((s) => s.markAllRead);
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -17,17 +19,12 @@ export default function NotificationMenu() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleToggle = () => {
-    setOpen((o) => !o);
-    if (!open) markAllRead();
-  };
-
   return (
     <div className="relative" ref={menuRef}>
       <button
-        onClick={handleToggle}
+        onClick={() => setOpen((o) => !o)}
         className="relative rounded-control p-2 text-ink-muted hover:bg-canvas"
-        aria-label="Notifications"
+        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
       >
         <Bell size={18} />
         {unreadCount > 0 && (
@@ -39,9 +36,17 @@ export default function NotificationMenu() {
 
       {open && (
         <div className="absolute right-0 mt-2 w-80 rounded-control border border-border bg-surface py-1 shadow-popover">
-          <div className="border-b border-border px-3 py-2">
+          <div className="flex items-center justify-between border-b border-border px-3 py-2">
             <p className="text-sm font-medium text-ink">Notifications</p>
+            <button
+              onClick={markAllRead}
+              disabled={unreadCount === 0}
+              className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 disabled:cursor-not-allowed disabled:text-ink-subtle"
+            >
+              <CheckCheck size={13} /> Mark all as read
+            </button>
           </div>
+
           <div className="max-h-80 overflow-y-auto">
             {notifications.length === 0 && (
               <p className="px-3 py-6 text-center text-sm text-ink-muted">
@@ -49,10 +54,21 @@ export default function NotificationMenu() {
               </p>
             )}
             {notifications.map((n) => (
-              <div key={n.id} className="border-b border-border px-3 py-2.5 last:border-0">
-                <p className="text-sm text-ink">{n.message}</p>
-                <p className="mt-0.5 text-xs text-ink-subtle">{new Date(n.at).toLocaleTimeString()}</p>
-              </div>
+              <button
+                key={n.id}
+                type="button"
+                onClick={() => markRead(n.id)}
+                className={`flex w-full items-start gap-2.5 border-b border-border px-3 py-2.5 text-left last:border-0 hover:bg-canvas ${n.read ? '' : 'bg-brand-50'
+                  }`}
+              >
+                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.read ? 'bg-transparent' : 'bg-brand-500'}`} />
+                <span className="min-w-0 flex-1">
+                  <span className={`block text-sm ${n.read ? 'text-ink-muted' : 'font-medium text-ink'}`}>
+                    {n.message}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-ink-subtle">{new Date(n.at).toLocaleTimeString()}</span>
+                </span>
+              </button>
             ))}
           </div>
         </div>

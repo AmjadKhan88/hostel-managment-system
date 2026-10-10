@@ -14,11 +14,19 @@ export const COMPLAINT_STATUSES = ['open', 'in_progress', 'resolved', 'closed'];
 
 const commentSchema = new mongoose.Schema(
   {
-    authorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // Exactly one of these identifies the author: staff (authorId) or a
+    // resident replying from the Portal (residentId).
+    authorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    residentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Resident', default: null },
     text: { type: String, required: true, trim: true, maxlength: 2000 },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );
+
+commentSchema.pre('validate', function requireAuthor(next) {
+  if (!this.authorId && !this.residentId) return next(new Error('A comment needs an author'));
+  return next();
+});
 
 const complaintSchema = new mongoose.Schema(
   {

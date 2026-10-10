@@ -55,11 +55,14 @@ import { useResidentRealtime } from '@/features/realtime/hooks/useResidentRealti
 import ForgotPasswordPage from '@/routes/ForgotPasswordPage.jsx';
 import ResetPasswordPage from '@/routes/ResetPasswordPage.jsx';
 
+import { useCurrencySync } from '@/features/settings/hooks/useCurrencySync';
+
 export default function App() {
   useSessionHydration();
   useRealtimeNotifications();
   useResidentSessionHydration();
   useResidentRealtime();
+  useCurrencySync();
 
   return (
     <>

@@ -106,3 +106,12 @@ export const listMyPaymentSubmissions = asyncHandler(async (req, res) => {
   const result = await portalService.listMyPaymentSubmissions(req.resident, req.query);
   new ApiResponse(200, result, 'Payment submissions fetched successfully').send(res);
 });
+
+export const addComplaintComment = asyncHandler(async (req, res) => {
+  const complaint = await portalService.addMyComplaintComment(
+    req.resident,
+    req.params.id,
+    req.body.text
+  );
+  new ApiResponse(201, { complaint }, 'Comment added').send(res);
+});

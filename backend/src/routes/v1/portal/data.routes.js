@@ -8,10 +8,18 @@ import {
   uploadMyDocumentSchema,
   submitMaintenanceRequestSchema,
   preRegisterVisitorSchema,
+  addComplaintCommentSchema,
 } from '../../../validators/portal.validator.js';
 import { createPaymentSubmissionSchema } from '../../../validators/paymentSubmission.validator.js';
 import * as portalController from '../../../controllers/portal.controller.js';
 import * as documentController from '../../../controllers/document.controller.js';
+import { createRateLimiter } from '../../../middlewares/rateLimiter.js';
+
+const commentLimiter = createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: 'You are commenting too quickly — please wait a moment',
+});
 
 const router = Router();
 
@@ -25,6 +33,12 @@ router.get('/payments', portalController.listMyPayments);
 router.get('/payments/:id/receipt', documentController.residentReceiptPdf);
 
 router.get('/complaints', portalController.listMyComplaints);
+router.post(
+  '/complaints/:id/comments',
+  commentLimiter,
+  validate({ body: addComplaintCommentSchema }),
+  portalController.addComplaintComment
+);
 router.get('/complaints/:id', portalController.getMyComplaint);
 router.post(
   '/complaints',

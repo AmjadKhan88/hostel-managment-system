@@ -47,7 +47,8 @@ export async function getComplaintById(user, id) {
   const complaint = await Complaint.findById(id)
     .populate('assignedTo', 'name email')
     .populate('residentId', 'name registrationNumber')
-    .populate('comments.authorId', 'name');
+    .populate('comments.authorId', 'name')
+    .populate('comments.residentId', 'name');
   if (!complaint) throw ApiError.notFound('Complaint not found');
   resolveHostelScope(user, complaint.hostelId.toString());
   return complaint;

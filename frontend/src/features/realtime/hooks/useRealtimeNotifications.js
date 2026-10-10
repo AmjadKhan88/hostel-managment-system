@@ -33,7 +33,7 @@ function describeReminder(reminder) {
 // Events that produce a toast + bell entry.
 const EVENT_MESSAGES = {
   'payment:recorded': (p) =>
-    `Payment of ${(p.amountMinorUnits / 100).toFixed(2)} recorded (${p.receiptNumber})`,
+    `Payment of ${formatMoney(p.amountMinorUnits)} recorded (${p.receiptNumber})`,
   'complaint:created': (p) => `New complaint: ${p.subject}`,
   'complaint:updated': (p) => `Complaint status changed to ${p.status.replace('_', ' ')}`,
   'admission:created': () => 'New admission application submitted',
@@ -50,6 +50,7 @@ const EVENT_MESSAGES = {
   'maintenance:created': (p) => `New maintenance request: ${p.title}`,
   'expense:generated': (p) =>
     `Recurring expense added: ${p.title} (${formatMoney(p.amountMinorUnits)})`,
+  'complaint:commented': (p) => `${p.residentName} replied on complaint "${p.subject}"`,
 };
 
 // Which cached lists to refresh when an event arrives, so open pages
@@ -66,6 +67,7 @@ const INVALIDATIONS = {
   'complaint:updated': [['complaints']],
   'maintenance:created': [['maintenance']],
   'expense:generated': [['expenses'], ['finance']],
+  'complaint:commented': [['complaints']],
 };
 
 const ALL_EVENTS = [...new Set([...Object.keys(EVENT_MESSAGES), ...Object.keys(INVALIDATIONS)])];
@@ -80,6 +82,12 @@ export function useRealtimeNotifications() {
   const addNotification = useNotificationsStore((s) => s.addNotification);
   const addToast = useToastStore((s) => s.addToast);
   const queryClient = useQueryClient();
+  const clearAll = useNotificationsStore((s) => s.clearAll);
+  // Notifications are per-session — never let the next person on this
+  // browser see the previous user's.
+  useEffect(() => {
+    if (!user) clearAll();
+  }, [user, clearAll]);
 
   useEffect(() => {
     if (!user) return undefined;

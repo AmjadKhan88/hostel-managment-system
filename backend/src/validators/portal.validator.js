@@ -41,3 +41,7 @@ export const preRegisterVisitorSchema = z.object({
   purpose: z.string().max(300).optional(),
   expectedAt: z.coerce.date().optional(),
 });
+
+export const addComplaintCommentSchema = z.object({
+  text: z.string().trim().min(1, 'Write something first').max(1000),
+});

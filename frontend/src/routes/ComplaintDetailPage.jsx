@@ -49,9 +49,8 @@ export default function ComplaintDetailPage() {
 
       <PageHeader
         title={complaint.subject}
-        description={`${complaint.category} · Reported ${new Date(complaint.createdAt).toLocaleDateString()}${
-          complaint.residentId ? ` by ${complaint.residentId.name}` : ''
-        }`}
+        description={`${complaint.category} · Reported ${new Date(complaint.createdAt).toLocaleDateString()}${complaint.residentId ? ` by ${complaint.residentId.name}` : ''
+          }`}
         action={<StatusBadge status={complaint.status} />}
       />
 
@@ -136,7 +135,14 @@ export default function ComplaintDetailPage() {
           {complaint.comments.map((c) => (
             <li key={c._id} className="rounded-control border border-border p-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-ink">{c.authorId?.name ?? 'Staff'}</span>
+                <span className="flex items-center gap-1.5 text-sm font-medium text-ink">
+                  {c.authorId?.name ?? c.residentId?.name ?? 'Staff'}
+                  {c.residentId && (
+                    <span className="rounded-pill bg-brand-50 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700">
+                      Resident
+                    </span>
+                  )}
+                </span>
                 <span className="text-xs text-ink-subtle">{new Date(c.createdAt).toLocaleString()}</span>
               </div>
               <p className="mt-1 text-sm text-ink-muted">{c.text}</p>

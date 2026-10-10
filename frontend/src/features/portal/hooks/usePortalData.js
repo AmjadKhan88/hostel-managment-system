@@ -153,3 +153,11 @@ export function useSubmitPaymentProof() {
     },
   });
 }
+
+export function useAddComplaintComment(complaintId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (text) => portalApi.addComplaintComment(complaintId, text),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['portal', 'complaints'] }),
+  });
+}

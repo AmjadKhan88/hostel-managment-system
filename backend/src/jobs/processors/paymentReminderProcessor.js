@@ -6,6 +6,7 @@ import { sendEmail, isEmailConfigured } from '../../services/email.service.js';
 import { sendWhatsApp, isWhatsAppConfigured } from '../../services/whatsapp.service.js';
 import { isValidTimeZone, calendarDaysBetweenInTz } from '../../utils/timezone.js';
 import { logger } from '../../config/logger.js';
+import { formatMoney } from '../../utils/money.js';
 
 const MAX_REMINDER_ROUNDS = 3;
 const REMINDER_INTERVAL_DAYS = 3;
@@ -155,8 +156,16 @@ function tally(summary, channel, status) {
   summary.channels[channel][key] += 1;
 }
 
-async function attemptResidentReminder({ invoice, resident, round, daysOverdue, now, summary }) {
-  const balance = ((invoice.totalMinorUnits - invoice.paidMinorUnits) / 100).toFixed(2);
+async function attemptResidentReminder({
+  invoice,
+  resident,
+  round,
+  daysOverdue,
+  now,
+  summary,
+  currency,
+}) {
+  const balance = formatMoney(invoice.totalMinorUnits - invoice.paidMinorUnits, currency);
   const messageText = `Hi ${resident.name}, invoice ${invoice.invoiceNumber} for ${balance} is ${daysOverdue} day(s) overdue. Please arrange payment at your earliest convenience.`;
 
   const plans = [
@@ -250,7 +259,7 @@ async function notifyStaffIfDue({
   summary.staffNotified += 1;
 }
 
-async function processInvoice({ invoice, deliveries, now, summary, timezone }) {
+async function processInvoice({ invoice, deliveries, now, summary, timezone, currency }) {
   const resident = invoice.residentId;
   const daysOverdue = Math.floor((now - invoice.dueDate) / DAY_MS);
   const rounds = summarizeRounds(deliveries);
@@ -276,6 +285,7 @@ async function processInvoice({ invoice, deliveries, now, summary, timezone }) {
         daysOverdue,
         now,
         summary,
+        currency,
       });
       sentThisRun = Object.values(channelResults).some((r) => r.status === 'sent');
       state = sentThisRun ? 'sent' : 'not_delivered';
@@ -365,6 +375,7 @@ export async function sendPaymentReminders({ hostelId } = {}) {
           now,
           summary,
           timezone,
+          currency: hostel.currency,
         });
       } catch (err) {
         summary.invoiceErrors += 1;

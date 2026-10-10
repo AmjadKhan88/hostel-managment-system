@@ -392,3 +392,34 @@ export function submitMyPaymentProof(residentAuth, body, file) {
 export function listMyPaymentSubmissions(residentAuth, query) {
   return paymentSubmissionService.listMySubmissions(residentAuth, query);
 }
+
+const MAX_COMMENTS_PER_COMPLAINT = 200;
+
+export async function addMyComplaintComment(residentAuth, complaintId, text) {
+  const complaint = await Complaint.findOne({
+    _id: complaintId,
+    hostelId: residentAuth.hostelId,
+    residentId: residentAuth.id,
+  });
+  if (!complaint) throw ApiError.notFound('Complaint not found');
+  if (complaint.status === 'closed') {
+    throw ApiError.conflict('This complaint is closed — submit a new one if the problem continues');
+  }
+  if (complaint.comments.length >= MAX_COMMENTS_PER_COMPLAINT) {
+    throw ApiError.badRequest(
+      'This conversation has reached its comment limit — please contact staff'
+    );
+  }
+
+  complaint.comments.push({ residentId: residentAuth.id, text });
+  await complaint.save();
+
+  const resident = await Resident.findById(residentAuth.id).select('name');
+  emitToHostel(residentAuth.hostelId, 'complaint:commented', {
+    complaintId: complaint._id,
+    subject: complaint.subject,
+    residentName: resident?.name ?? 'A resident',
+  });
+
+  return getMyComplaintById(residentAuth, complaintId);
+}

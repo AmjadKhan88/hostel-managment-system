@@ -1,12 +1,3 @@
-import { create } from 'zustand';
+import { createNotificationsStore } from './createNotificationsStore';
 
-export const useResidentNotificationsStore = create((set) => ({
-  notifications: [],
-  unreadCount: 0,
-  addNotification: (notification) =>
-    set((state) => ({
-      notifications: [notification, ...state.notifications].slice(0, 30),
-      unreadCount: state.unreadCount + 1,
-    })),
-  markAllRead: () => set({ unreadCount: 0 }),
-}));
+export const useResidentNotificationsStore = createNotificationsStore();

@@ -97,7 +97,7 @@ export default function FinancePage() {
                       <Cell key={i} fill={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip formatter={(value) => formatMoney(Math.round(value * 100))} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>

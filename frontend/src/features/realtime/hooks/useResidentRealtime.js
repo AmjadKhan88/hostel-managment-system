@@ -58,6 +58,12 @@ export function useResidentRealtime() {
   const addToast = useToastStore((s) => s.addToast);
   const queryClient = useQueryClient();
 
+  const clearAll = useResidentNotificationsStore((s) => s.clearAll);
+
+  useEffect(() => {
+    if (!resident) clearAll();
+  }, [resident, clearAll]);
+
   useEffect(() => {
     if (!resident) return undefined;
 
